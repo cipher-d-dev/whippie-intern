@@ -36,7 +36,10 @@ export class ApiError extends Error {
 
 /* ─── Core request ───────────────────────────────────────────────────────── */
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+// Track whether a refresh is already in flight to avoid parallel refresh storms
+let _refreshing: Promise<void> | null = null;
+
+async function request<T>(path: string, options?: RequestInit, _retry = true): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
 
   const response = await fetch(url, {
@@ -50,6 +53,33 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
+    // On 401, attempt a silent token refresh once then retry the original request
+    if (response.status === 401 && _retry && !path.includes("/auth/refresh")) {
+      if (!_refreshing) {
+        _refreshing = (async () => {
+          try {
+            // Lazy import to avoid circular dependency at module load time
+            const { apiRefresh } = await import("@/features/auth/auth.api");
+            await apiRefresh();
+          } finally {
+            _refreshing = null;
+          }
+        })();
+      }
+      try {
+        await _refreshing;
+        // Re-run the original request with the new token in headers
+        const { authHeaders } = await import("@/features/auth/auth.api");
+        const retryOptions: RequestInit = {
+          ...options,
+          headers: { ...options?.headers, ...authHeaders() },
+        };
+        return request<T>(path, retryOptions, false);
+      } catch {
+        // Refresh failed — fall through and throw the original 401
+      }
+    }
+
     let body: ApiErrorBody = { message: response.statusText };
     try {
       body = (await response.json()) as ApiErrorBody;
