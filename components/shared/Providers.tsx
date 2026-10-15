@@ -1,21 +1,17 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
 import { useState } from "react";
 
-/**
- * Providers — wraps the app with TanStack Query and any future global context.
- * Must be a client component because QueryClientProvider uses React context.
- */
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Create the QueryClient once per browser session (not per render)
   const [queryClient] = useState(
     () =>
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Sensible defaults for a mobile PWA on variable networks
-            staleTime: 60 * 1000, // 1 minute
+            staleTime: 60 * 1000,       // 1 minute
             retry: 2,
             refetchOnWindowFocus: false,
           },
@@ -24,6 +20,30 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange={false}
+      >
+        {children}
+
+        {/* Toast — bottom of screen, mobile-friendly */}
+        <Toaster
+          position="bottom-center"
+          expand={false}
+          richColors
+          toastOptions={{
+            classNames: {
+              toast:
+                "font-sans rounded-2xl shadow-violet-md border border-border text-sm",
+              title: "font-semibold",
+              description: "text-muted-foreground",
+            },
+          }}
+        />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

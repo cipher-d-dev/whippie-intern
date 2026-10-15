@@ -1,16 +1,22 @@
 /**
- * API client stub — Phase 1 will flesh this out with real request logic,
- * session handling (HTTP-only cookies) and error normalisation.
- *
- * All API calls go through the shared Express backend.
- * The client NEVER connects directly to MongoDB.
+ * API client — shared fetch wrapper for the Whippe Express backend.
+ * Handles session cookies, error normalisation and per-field validation errors.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+
+/* ─── Error types ────────────────────────────────────────────────────────── */
+
+export type ApiFieldError = {
+  field: string;
+  message: string;
+};
 
 export type ApiErrorBody = {
   message: string;
   code?: string;
+  errors?: ApiFieldError[];
 };
 
 export class ApiError extends Error {
@@ -21,19 +27,16 @@ export class ApiError extends Error {
     super(body.message);
     this.name = "ApiError";
   }
+
+  /** Convenience: array of field-level errors (empty if none) */
+  get errors(): ApiFieldError[] {
+    return this.body.errors ?? [];
+  }
 }
 
-/**
- * Base fetch wrapper — will be extended in Phase 1 with:
- * - credentials: "include" for cookie-based sessions
- * - CSRF token handling if required
- * - response type normalisation
- * - centralised error handling
- */
-async function request<T>(
-  path: string,
-  options?: RequestInit
-): Promise<T> {
+/* ─── Core request ───────────────────────────────────────────────────────── */
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
 
   const response = await fetch(url, {
@@ -42,8 +45,8 @@ async function request<T>(
       "Content-Type": "application/json",
       ...options?.headers,
     },
-    // Phase 1: change to "include" once session cookies are established
-    credentials: "same-origin",
+    // HTTP-only session cookies are managed by Express
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -63,6 +66,8 @@ async function request<T>(
 
   return response.json() as Promise<T>;
 }
+
+/* ─── Exported API object ────────────────────────────────────────────────── */
 
 export const api = {
   get: <T>(path: string, options?: RequestInit) =>
@@ -92,3 +97,25 @@ export const api = {
   delete: <T>(path: string, options?: RequestInit) =>
     request<T>(path, { ...options, method: "DELETE" }),
 };
+
+/* ─── Utility: apply API field errors to react-hook-form ────────────────── */
+
+type SetErrorFn = (
+  field: string,
+  error: { type: string; message: string }
+) => void;
+
+/**
+ * Maps an ApiError's per-field errors onto a react-hook-form `setError` fn.
+ * Returns true if any field errors were applied, false if only a message.
+ */
+export function applyApiErrors(err: unknown, setError: SetErrorFn): boolean {
+  if (!(err instanceof ApiError)) return false;
+  const fieldErrors = err.errors;
+  if (fieldErrors.length === 0) return false;
+
+  for (const { field, message } of fieldErrors) {
+    setError(field, { type: "server", message });
+  }
+  return true;
+}
