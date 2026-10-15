@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { WhippieLogo } from "@/components/shared/WhippieLogo";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -11,11 +12,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="absolute top-1/2 -left-20 h-56 w-56 -translate-y-1/2 rounded-full bg-violet-300/10 blur-2xl" />
       </div>
 
-      {/* Logo mark */}
+      {/* Logo */}
       <div className="mb-8 animate-fade-up flex flex-col items-center gap-2">
-        <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-primary shadow-violet-lg">
-          <span className="text-2xl font-black text-white tracking-tighter">W</span>
-        </div>
+        <WhippieLogo size={64} className="shadow-violet-lg" />
         <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-muted-foreground">
           Intern Portal
         </p>

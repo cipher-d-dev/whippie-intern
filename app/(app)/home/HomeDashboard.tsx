@@ -47,19 +47,36 @@ export function HomeDashboard() {
     <div className="flex flex-col gap-5 px-4 pb-8 pt-6">
 
       {/* ── Greeting ────────────────────────────────────────────── */}
-      <div className="animate-fade-up">
-        <p className="text-sm font-medium text-muted-foreground">{greeting}</p>
-        <h1 className="text-[1.75rem] font-black tracking-tight text-foreground leading-tight">
-          {firstName} 👋
-        </h1>
-        {intern && (
-          <p className="mt-1 text-xs font-medium text-muted-foreground">
-            {(intern.department as any)?.name
-              ? `${(intern.department as any).name} · `
-              : ""}
-            {intern.internshipType === "NYSC_IT" ? "NYSC IT" : "Intern"}
-          </p>
-        )}
+      <div className="flex items-center justify-between animate-fade-up">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{greeting}</p>
+          <h1 className="text-[1.75rem] font-black tracking-tight text-foreground leading-tight">
+            {firstName} 👋
+          </h1>
+          {intern && (
+            <p className="mt-1 text-xs font-medium text-muted-foreground">
+              {(intern.department as any)?.name
+                ? `${(intern.department as any).name} · `
+                : ""}
+              {intern.internshipType === "NYSC_IT" ? "NYSC IT" : "Intern"}
+            </p>
+          )}
+        </div>
+        {/* Logo top-right */}
+        <img
+          src="/logo-light.png"
+          alt="Whippie"
+          width={40}
+          height={40}
+          className="rounded-xl dark:hidden opacity-80"
+        />
+        <img
+          src="/logo-dark.png"
+          alt="Whippie"
+          width={40}
+          height={40}
+          className="rounded-xl hidden dark:block opacity-80"
+        />
       </div>
 
       {/* ── Urgent: changes requested ───────────────────────────── */}
