@@ -50,20 +50,8 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <img
-            src="/logo-light.png"
-            alt="Whippie"
-            width={56}
-            height={56}
-            className="rounded-2xl animate-pulse dark:hidden"
-          />
-          <img
-            src="/logo-dark.png"
-            alt="Whippie"
-            width={56}
-            height={56}
-            className="rounded-2xl animate-pulse hidden dark:block"
-          />
+          <img src="/logo-light.png" alt="Whippie" width={56} height={56} className="animate-pulse dark:hidden" />
+          <img src="/logo-dark.png"  alt="Whippie" width={56} height={56} className="animate-pulse hidden dark:block" />
           <p className="text-xs text-muted-foreground">Loading...</p>
         </div>
       </div>

@@ -14,7 +14,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
       {/* Logo */}
       <div className="mb-8 animate-fade-up flex flex-col items-center gap-2">
-        <WhippieLogo size={64} className="shadow-violet-lg" />
+        <WhippieLogo size={64} />
         <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-muted-foreground">
           Intern Portal
         </p>

@@ -21,7 +21,7 @@ export function WhippieLogo({ className, size = 48 }: WhippieLogoProps) {
 
   // Before mount, render a placeholder the same size to avoid layout shift
   if (!mounted) {
-    return <div style={{ width: size, height: size }} className={cn("rounded-2xl bg-muted animate-pulse", className)} />;
+    return <div style={{ width: size, height: size }} className={cn("bg-muted animate-pulse", className)} />;
   }
 
   const src = resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png";
@@ -32,7 +32,7 @@ export function WhippieLogo({ className, size = 48 }: WhippieLogoProps) {
       alt="Whippie"
       width={size}
       height={size}
-      className={cn("rounded-2xl object-contain", className)}
+      className={cn("object-contain", className)}
       priority
     />
   );

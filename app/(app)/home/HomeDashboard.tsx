@@ -68,14 +68,14 @@ export function HomeDashboard() {
           alt="Whippie"
           width={40}
           height={40}
-          className="rounded-xl dark:hidden opacity-80"
+          className="dark:hidden opacity-80"
         />
         <img
           src="/logo-dark.png"
           alt="Whippie"
           width={40}
           height={40}
-          className="rounded-xl hidden dark:block opacity-80"
+          className="hidden dark:block opacity-80"
         />
       </div>
 
