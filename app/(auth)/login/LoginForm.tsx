@@ -27,8 +27,14 @@ export function LoginForm() {
   const login = useLogin(setError);
   const busy  = isSubmitting || login.isPending;
 
+  const onSubmit = handleSubmit((v) => login.mutate(v));
+
   return (
-    <form onSubmit={handleSubmit((v) => login.mutate(v))} className="space-y-5" noValidate>
+    <form
+      onSubmit={(e) => { e.preventDefault(); onSubmit(e); }}
+      className="space-y-5"
+      noValidate
+    >
 
       {/* Email */}
       <div className="space-y-1.5">

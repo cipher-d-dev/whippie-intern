@@ -62,8 +62,14 @@ export function SignupForm() {
 
   const busy = isSubmitting || signup.isPending;
 
+  const onSubmit = handleSubmit((v) => signup.mutate(v));
+
   return (
-    <form onSubmit={handleSubmit((v) => signup.mutate(v))} className="space-y-4" noValidate>
+    <form
+      onSubmit={(e) => { e.preventDefault(); onSubmit(e); }}
+      className="space-y-4"
+      noValidate
+    >
 
       {/* Name row */}
       <div className="grid grid-cols-2 gap-3">
