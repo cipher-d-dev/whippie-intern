@@ -1,9 +1,10 @@
-import { MobileShell } from "@/components/layout/MobileShell";
+import { AppAuthGuard } from "@/components/shared/AppAuthGuard";
 
 /**
- * App layout — wraps all authenticated intern screens in the mobile shell.
- * Authentication guard will be added in Phase 1 once auth is implemented.
+ * App layout — wraps all authenticated intern screens.
+ * AppAuthGuard checks session before rendering anything.
+ * Unauthenticated or wrong-role users are redirected to /login.
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <MobileShell>{children}</MobileShell>;
+  return <AppAuthGuard>{children}</AppAuthGuard>;
 }

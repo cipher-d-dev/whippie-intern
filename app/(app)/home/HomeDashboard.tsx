@@ -10,101 +10,94 @@ import {
   useMyReports,
 } from "@/features/dashboard/dashboard.hooks";
 import { AttendanceStatusCard } from "./cards/AttendanceStatusCard";
-import { TasksSummaryCard } from "./cards/TasksSummaryCard";
+import { TasksSummaryCard }     from "./cards/TasksSummaryCard";
 import { NotificationsFeedCard } from "./cards/NotificationsFeedCard";
-import { ProgressCard } from "./cards/ProgressCard";
-import { ReportStatusCard } from "./cards/ReportStatusCard";
-import { DashboardSkeleton } from "./DashboardSkeleton";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { ProgressCard }         from "./cards/ProgressCard";
+import { ReportStatusCard }     from "./cards/ReportStatusCard";
+import { DashboardSkeleton }    from "./DashboardSkeleton";
+import { useRouter }            from "next/navigation";
 
 export function HomeDashboard() {
   const router = useRouter();
-  const { data: user, isLoading: sessionLoading } = useSession();
 
-  // Redirect non-active accounts
-  useEffect(() => {
-    if (!user) return;
-    if (user.accountStatus === "PENDING_HR_VERIFICATION") router.replace("/verification-pending");
-    if (user.accountStatus === "REJECTED") router.replace("/account-rejected");
-  }, [user, router]);
+  const { data: user }                                  = useSession();
+  const { data: intern, isLoading: internLoading }      = useMyInternRecord();
+  const { data: summary }                               = useInternSummary(intern?.id);
+  const { data: todayAttendance, isLoading: attLoading } = useTodayAttendance();
+  const { data: activeTasks,     isLoading: tasksLoading } = useMyTasks();
+  const { data: notifications }                         = useMyNotifications(false);
+  const { data: reports }                               = useMyReports();
 
-  const { data: intern, isLoading: internLoading } = useMyInternRecord();
-  const { data: summary } = useInternSummary(intern?.id);
-  const { data: todayAttendance, isLoading: attendanceLoading } = useTodayAttendance();
-  const { data: activeTasks, isLoading: tasksLoading } = useMyTasks();
-  const { data: notifications } = useMyNotifications(false);
-  const { data: reports } = useMyReports();
+  if (internLoading) return <DashboardSkeleton />;
 
-  const isLoading = sessionLoading || internLoading;
-
-  if (isLoading) return <DashboardSkeleton />;
-
-  const firstName = user?.firstName ?? "there";
-  const greeting = getGreeting();
-  const checkIn = todayAttendance?.find((a) => a.checkType === "CHECK_IN");
-  const checkOut = todayAttendance?.find((a) => a.checkType === "CHECK_OUT");
+  const firstName   = user?.firstName ?? "there";
+  const greeting    = getGreeting();
+  const checkIn     = todayAttendance?.find((a) => a.checkType === "CHECK_IN")  ?? null;
+  const checkOut    = todayAttendance?.find((a) => a.checkType === "CHECK_OUT") ?? null;
   const pendingTasks = activeTasks?.data.filter(
     (t) => t.status === "TODO" || t.status === "IN_PROGRESS" || t.status === "CHANGES_REQUESTED"
   ) ?? [];
-  const unreadCount = notifications?.data.filter((n) => !n.read).length ?? 0;
+  const unreadCount  = notifications?.data.filter((n) => !n.read).length ?? 0;
   const draftReports = reports?.data.filter((r) => r.status === "DRAFT") ?? [];
-  const hasFeedback = activeTasks?.data.some((t) => t.feedback && t.status === "CHANGES_REQUESTED") ?? false;
+  const hasFeedback  = activeTasks?.data.some(
+    (t) => t.feedback && t.status === "CHANGES_REQUESTED"
+  ) ?? false;
 
   return (
-    <div className="px-4 pb-6 pt-5 space-y-5">
+    <div className="flex flex-col gap-5 px-4 pb-8 pt-6">
 
-      {/* ── Greeting header ─────────────────────────────────────── */}
+      {/* ── Greeting ────────────────────────────────────────────── */}
       <div className="animate-fade-up">
         <p className="text-sm font-medium text-muted-foreground">{greeting}</p>
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+        <h1 className="text-[1.75rem] font-black tracking-tight text-foreground leading-tight">
           {firstName} 👋
         </h1>
         {intern && (
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {intern.department
-              ? `${(intern.department as any).name} · ${intern.internshipType === "NYSC_IT" ? "NYSC IT" : "Intern"}`
-              : intern.internshipType === "NYSC_IT" ? "NYSC IT" : "Intern"}
+          <p className="mt-1 text-xs font-medium text-muted-foreground">
+            {(intern.department as any)?.name
+              ? `${(intern.department as any).name} · `
+              : ""}
+            {intern.internshipType === "NYSC_IT" ? "NYSC IT" : "Intern"}
           </p>
         )}
       </div>
 
-      {/* ── Urgent banner: changes requested ────────────────────── */}
+      {/* ── Urgent: changes requested ───────────────────────────── */}
       {hasFeedback && (
-        <div className="animate-fade-up delay-50 rounded-2xl border border-amber-200/60 bg-amber-50 px-4 py-3 dark:border-amber-800/30 dark:bg-amber-900/20">
-          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-            ⚠️ A task needs your attention — changes requested by supervisor.
+        <div className="animate-scale-in rounded-2xl border border-amber-300/40 bg-gradient-to-br from-amber-50 to-amber-100/60 dark:from-amber-900/20 dark:to-amber-800/10 px-4 py-3">
+          <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+            ⚠️ A task needs your attention — supervisor requested changes.
           </p>
         </div>
       )}
 
-      {/* ── Attendance ───────────────────────────────────────────── */}
+      {/* ── Attendance card ──────────────────────────────────────── */}
       <AttendanceStatusCard
-        checkIn={checkIn ?? null}
-        checkOut={checkOut ?? null}
-        isLoading={attendanceLoading}
+        checkIn={checkIn}
+        checkOut={checkOut}
+        isLoading={attLoading}
         className="animate-fade-up delay-100"
       />
 
-      {/* ── Two-column stat row ──────────────────────────────────── */}
+      {/* ── Stat pills ───────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3">
         <StatPill
-          label="Tasks active"
+          label="Active tasks"
           value={pendingTasks.length}
-          color="violet"
+          gradient="from-violet-500 to-violet-600"
           className="animate-fade-up delay-150"
           onClick={() => router.push("/tasks")}
         />
         <StatPill
           label="Unread alerts"
           value={unreadCount}
-          color={unreadCount > 0 ? "amber" : "emerald"}
+          gradient={unreadCount > 0 ? "from-amber-400 to-amber-500" : "from-emerald-400 to-emerald-500"}
           className="animate-fade-up delay-200"
           onClick={() => router.push("/notifications")}
         />
       </div>
 
-      {/* ── Tasks summary ────────────────────────────────────────── */}
+      {/* ── Tasks ────────────────────────────────────────────────── */}
       <TasksSummaryCard
         tasks={pendingTasks}
         summary={summary?.tasks}
@@ -112,7 +105,7 @@ export function HomeDashboard() {
         className="animate-fade-up delay-200"
       />
 
-      {/* ── Progress card ────────────────────────────────────────── */}
+      {/* ── Progress ─────────────────────────────────────────────── */}
       {intern && summary && (
         <ProgressCard
           intern={intern}
@@ -129,7 +122,7 @@ export function HomeDashboard() {
         />
       )}
 
-      {/* ── Notifications feed ───────────────────────────────────── */}
+      {/* ── Notifications ────────────────────────────────────────── */}
       <NotificationsFeedCard
         notifications={notifications?.data.slice(0, 5) ?? []}
         className="animate-fade-up delay-300"
@@ -139,8 +132,6 @@ export function HomeDashboard() {
   );
 }
 
-// ─── Greeting helper ──────────────────────────────────────────────────────────
-
 function getGreeting(): string {
   const h = new Date().getHours();
   if (h < 12) return "Good morning,";
@@ -148,32 +139,22 @@ function getGreeting(): string {
   return "Good evening,";
 }
 
-// ─── Inline stat pill ─────────────────────────────────────────────────────────
-
-interface StatPillProps {
+function StatPill({
+  label, value, gradient, className, onClick,
+}: {
   label: string;
   value: number;
-  color: "violet" | "emerald" | "amber" | "rose" | "blue";
+  gradient: string;
   className?: string;
   onClick?: () => void;
-}
-
-const colorMap: Record<StatPillProps["color"], string> = {
-  violet:  "bg-card-violet",
-  emerald: "bg-card-emerald",
-  amber:   "bg-card-amber",
-  rose:    "bg-card-rose",
-  blue:    "bg-card-blue",
-};
-
-function StatPill({ label, value, color, className, onClick }: StatPillProps) {
+}) {
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left rounded-2xl p-4 ${colorMap[color]} hover-lift hover-press ${className ?? ""}`}
+      className={`w-full text-left rounded-2xl bg-gradient-to-br ${gradient} p-4 shadow-violet-sm hover-lift hover-press text-white ${className ?? ""}`}
     >
-      <p className="text-3xl font-extrabold animate-count-in">{value}</p>
-      <p className="mt-1 text-xs font-medium opacity-80">{label}</p>
+      <p className="text-3xl font-black animate-count-in">{value}</p>
+      <p className="mt-1 text-xs font-semibold opacity-90">{label}</p>
     </button>
   );
 }
