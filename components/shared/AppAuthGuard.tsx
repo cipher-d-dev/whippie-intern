@@ -34,12 +34,12 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (user.accountStatus === "PENDING_HR_VERIFICATION") {
+    if (user.status === "PENDING_HR_VERIFICATION") {
       router.replace("/verification-pending");
       return;
     }
 
-    if (user.accountStatus === "REJECTED") {
+    if (user.status === "REJECTED") {
       router.replace("/account-rejected");
       return;
     }
@@ -58,7 +58,7 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Not authed or wrong role — render nothing while redirect happens
-  if (!user || user.role !== "INTERN" || user.accountStatus !== "ACTIVE") {
+  if (!user || user.role !== "INTERN" || user.status !== "ACTIVE") {
     return null;
   }
 

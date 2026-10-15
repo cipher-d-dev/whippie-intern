@@ -33,7 +33,7 @@ export function ReportStatusCard({ drafts, className }: Props) {
               {drafts.length} draft {drafts.length === 1 ? "report" : "reports"} pending
             </p>
             <p className="text-xs text-amber-700/70 dark:text-amber-400/70">
-              Submit before your supervisor's review
+              Submit before your supervisor&apos;s review
             </p>
           </div>
         </div>

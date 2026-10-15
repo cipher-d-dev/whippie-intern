@@ -6,7 +6,7 @@
 
 // ─── Enums (match API contract exactly) ──────────────────────────────────────
 
-export type AccountStatus =
+export type status =
   | "PENDING_HR_VERIFICATION"
   | "ACTIVE"
   | "REJECTED";
@@ -65,7 +65,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: Role;
-  accountStatus: AccountStatus;
+  status: status;        // API field is "status" not "status"
   authMethod: AuthMethod;
   createdAt: string;
   updatedAt: string;

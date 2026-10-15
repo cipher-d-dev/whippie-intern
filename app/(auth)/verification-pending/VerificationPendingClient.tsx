@@ -3,8 +3,6 @@
 import { Clock, Mail, LogOut, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession, useLogout } from "@/features/auth/auth.hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import { SESSION_QUERY_KEY } from "@/features/auth/auth.hooks";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -15,12 +13,12 @@ export function VerificationPendingClient() {
 
   // If HR approved while waiting, redirect immediately
   useEffect(() => {
-    if (user?.accountStatus === "ACTIVE") {
+    if (user?.status === "ACTIVE") {
       router.replace("/home");
-    } else if (user?.accountStatus === "REJECTED") {
+    } else if (user?.status === "REJECTED") {
       router.replace("/account-rejected");
     }
-  }, [user?.accountStatus, router]);
+  }, [user?.status, router]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-5 py-12 bg-background">

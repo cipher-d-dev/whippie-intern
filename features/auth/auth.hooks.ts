@@ -75,7 +75,7 @@ export function useLogin(setError?: UseFormSetError<LoginPayload>) {
     mutationFn: (payload: LoginPayload) => apiLogin(payload),
     onSuccess: (data) => {
       qc.setQueryData(SESSION_QUERY_KEY, data.user);
-      const status = data.user.accountStatus;
+      const status = data.user.status;
       if (status === "PENDING_HR_VERIFICATION") {
         router.replace("/verification-pending");
       } else if (status === "REJECTED") {
