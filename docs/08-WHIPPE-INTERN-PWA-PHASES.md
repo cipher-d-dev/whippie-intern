@@ -63,7 +63,7 @@ Backend/Web Phase 1.
 
 ## Context
 
-The intern has already completed AIT's physical screening.
+The intern has already completed DAAR Communications' physical screening.
 
 The PWA provides account creation after that screening.
 
@@ -101,7 +101,7 @@ The exact Next.js route grouping may follow the existing project structure.
 
 ## Signup
 
-Manual signup should collect only information actually required by AIT. Do not invent unnecessary identity fields.
+Manual signup should collect only information actually required by DAAR Communications. Do not invent unnecessary identity fields.
 
 Google signup should authenticate through the backend's selected OAuth implementation. The backend creates/links the Whippe account and places it into pending verification.
 

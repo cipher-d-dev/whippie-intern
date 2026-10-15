@@ -1,24 +1,32 @@
 import type { Metadata } from "next";
+import { LoginForm } from "./LoginForm";
 
 export const metadata: Metadata = {
   title: "Sign in — Whippe Intern",
 };
 
-/**
- * Login page — Phase 1 will implement full auth UI.
- * Scaffold placeholder only.
- */
 export default function LoginPage() {
   return (
     <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Sign in</h1>
+      <div className="space-y-1 text-center animate-fade-up">
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+          Welcome back
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Sign in to your Whippe Intern account
+          Sign in to your intern account
         </p>
       </div>
-      <p className="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-        Authentication — Phase 1
+
+      <LoginForm />
+
+      <p className="text-center text-xs text-muted-foreground animate-fade-up delay-300">
+        Don&apos;t have an account?{" "}
+        <a
+          href="/signup"
+          className="font-semibold text-primary underline-offset-4 hover:underline"
+        >
+          Create one
+        </a>
       </p>
     </div>
   );

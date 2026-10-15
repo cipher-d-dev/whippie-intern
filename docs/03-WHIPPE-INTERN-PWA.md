@@ -24,7 +24,7 @@ No direct MongoDB access.
 
 # 3. Account Creation and Verification
 
-Intern account creation happens after AIT's physical screening.
+Intern account creation happens after DAAR Communications' physical screening.
 
 Supported signup methods:
 
