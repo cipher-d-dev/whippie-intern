@@ -12,6 +12,7 @@ import { MobileShell } from "@/components/layout/MobileShell";
  *  - Loading       → show nothing (prevent flash)
  *  - No session    → /login
  *  - HR/SUPERVISOR → /login (wrong app)
+ *  - UNVERIFIED_EMAIL → /verify-email  (email not yet verified)
  *  - PENDING       → /verification-pending
  *  - REJECTED      → /account-rejected
  *  - ACTIVE INTERN → render children inside MobileShell
@@ -31,6 +32,11 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
     // This is the intern PWA — HR and supervisors do not belong here
     if (user.role !== "INTERN") {
       router.replace("/login");
+      return;
+    }
+
+    if (user.status === "UNVERIFIED_EMAIL") {
+      router.replace("/verify-email");
       return;
     }
 

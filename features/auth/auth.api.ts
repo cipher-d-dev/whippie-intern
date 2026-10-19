@@ -89,3 +89,28 @@ export async function apiGetMe() {
   });
   return res.data.user;
 }
+
+// ─── Email verification ───────────────────────────────────────────────────────
+
+export async function apiVerifyEmail(token: string) {
+  const res = await api.post<ApiResponse<null>>(
+    "/api/v1/auth/verify-email",
+    { token },
+    { headers: authHeaders() },
+  );
+  return res;
+}
+
+export async function apiResendVerification(email: string) {
+  await api.post<unknown>("/api/v1/auth/resend-verification", { email });
+}
+
+// ─── Password reset ───────────────────────────────────────────────────────────
+
+export async function apiForgotPassword(email: string) {
+  await api.post<unknown>("/api/v1/auth/forgot-password", { email });
+}
+
+export async function apiResetPassword(token: string, password: string) {
+  await api.post<unknown>("/api/v1/auth/reset-password", { token, password });
+}

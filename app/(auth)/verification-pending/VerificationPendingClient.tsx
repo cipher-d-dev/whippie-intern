@@ -17,6 +17,8 @@ export function VerificationPendingClient() {
       router.replace("/home");
     } else if (user?.status === "REJECTED") {
       router.replace("/account-rejected");
+    } else if (user?.status === "UNVERIFIED_EMAIL") {
+      router.replace("/verify-email");
     }
   }, [user?.status, router]);
 
@@ -37,16 +39,16 @@ export function VerificationPendingClient() {
 
       <div className="w-full max-w-sm text-center space-y-3 animate-fade-up">
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-          Awaiting verification
+          Awaiting HR approval
         </h1>
         {user && (
           <p className="text-base font-medium text-foreground/80">
-            Hi {user.firstName},
+            Hi {user.firstName}, your email is verified ✓
           </p>
         )}
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Your account has been created and is waiting for HR to verify it. This
-          usually happens within one business day.
+          HR needs to review and approve your account before you can sign in.
+          This usually happens within one business day.
         </p>
       </div>
 
@@ -54,8 +56,8 @@ export function VerificationPendingClient() {
       <div className="mt-8 w-full max-w-sm rounded-2xl border border-border/60 bg-card p-5 shadow-card space-y-3 animate-fade-up delay-100">
         {[
           { icon: Mail,         text: "You'll receive an email once HR reviews your account." },
-          { icon: Clock,        text: "Unverified accounts expire after 30 days." },
-          { icon: RefreshCw,    text: "You can check your status by tapping the button below." },
+          { icon: Clock,        text: "Accounts pending review expire after 30 days." },
+          { icon: RefreshCw,    text: "Tap \"Check status\" below if you've already been approved." },
         ].map(({ icon: Icon, text }, i) => (
           <div key={i} className="flex items-start gap-3">
             <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-muted">

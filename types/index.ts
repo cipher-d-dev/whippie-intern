@@ -7,13 +7,14 @@
 // ─── Enums (match API contract exactly) ──────────────────────────────────────
 
 export type status =
+  | "UNVERIFIED_EMAIL"
   | "PENDING_HR_VERIFICATION"
   | "ACTIVE"
   | "REJECTED";
 
 export type Role = "HR" | "SUPERVISOR" | "INTERN";
 
-export type AuthMethod = "PASSWORD" | "GOOGLE";
+export type AuthMethod = "PASSWORD" | "GOOGLE" | "BOTH";
 
 export type InternshipType = "INTERNSHIP" | "NYSC_IT";
 

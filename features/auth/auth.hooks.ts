@@ -25,6 +25,10 @@ import {
   apiLogout,
   apiRefresh,
   apiSignup,
+  apiVerifyEmail,
+  apiResendVerification,
+  apiForgotPassword,
+  apiResetPassword,
   type LoginPayload,
   type SignupPayload,
 } from "./auth.api";
@@ -76,7 +80,9 @@ export function useLogin(setError?: UseFormSetError<LoginPayload>) {
     onSuccess: (data) => {
       qc.setQueryData(SESSION_QUERY_KEY, data.user);
       const status = data.user.status;
-      if (status === "PENDING_HR_VERIFICATION") {
+      if (status === "UNVERIFIED_EMAIL") {
+        router.replace("/verify-email");
+      } else if (status === "PENDING_HR_VERIFICATION") {
         router.replace("/verification-pending");
       } else if (status === "REJECTED") {
         router.replace("/account-rejected");
@@ -103,8 +109,9 @@ export function useSignup(setError?: UseFormSetError<SignupPayload>) {
     mutationFn: (payload: SignupPayload) => apiSignup(payload),
     onSuccess: (data) => {
       qc.setQueryData(SESSION_QUERY_KEY, data.user);
-      // New accounts always land in pending state
-      router.replace("/verification-pending");
+      // New signups land in UNVERIFIED_EMAIL — redirect to verify-email page
+      // (NOT /verification-pending, which is the HR approval step that comes later)
+      router.replace("/verify-email");
     },
     onError: (err) => {
       if (setError && applyApiErrors(err, setError as Parameters<typeof applyApiErrors>[1])) return;
@@ -126,6 +133,77 @@ export function useLogout() {
     onSettled: () => {
       qc.clear();
       router.replace("/login");
+    },
+  });
+}
+
+// ─── Email verification ───────────────────────────────────────────────────────
+
+export function useVerifyEmail() {
+  const qc = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (token: string) => apiVerifyEmail(token),
+    onSuccess: () => {
+      // Token verified — bump the session so the next render sees PENDING_HR_VERIFICATION
+      void qc.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+      router.replace("/verification-pending");
+    },
+    onError: (err) => {
+      const msg =
+        err instanceof ApiError ? err.message : "Verification failed. Try again.";
+      toast.error(msg);
+    },
+  });
+}
+
+export function useResendVerification() {
+  return useMutation({
+    mutationFn: (email: string) => apiResendVerification(email),
+    onSuccess: () => {
+      toast.success("Verification email sent. Check your inbox.");
+    },
+    onError: () => {
+      // Service always 200s — if we get here it's a network issue
+      toast.error("Could not resend email. Check your connection.");
+    },
+  });
+}
+
+// ─── Forgot / reset password ──────────────────────────────────────────────────
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (email: string) => apiForgotPassword(email),
+    onSuccess: () => {
+      // Don't toast here — the calling component handles the "email sent" UI
+    },
+    onError: () => {
+      toast.error("Something went wrong. Please try again.");
+    },
+  });
+}
+
+interface ResetPasswordPayload {
+  token: string;
+  password: string;
+}
+
+export function useResetPassword() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: ({ token, password }: ResetPasswordPayload) =>
+      apiResetPassword(token, password),
+    onSuccess: () => {
+      toast.success("Password reset! You can now sign in.");
+      router.replace("/login");
+    },
+    onError: (err) => {
+      const msg =
+        err instanceof ApiError ? err.message : "Reset failed. Try again.";
+      toast.error(msg);
     },
   });
 }

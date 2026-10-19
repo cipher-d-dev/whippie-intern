@@ -51,7 +51,7 @@ export function LoginForm() {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <label htmlFor="password" className="block text-[13px] font-semibold text-foreground">Password</label>
-          <a href="#" className="text-[11px] font-semibold text-primary hover:underline underline-offset-4">Forgot?</a>
+          <a href="/forgot-password" className="text-[11px] font-semibold text-primary hover:underline underline-offset-4">Forgot?</a>
         </div>
         <div className="relative">
           <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" aria-hidden />
