@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { useState } from "react";
 import { OfflineBanner } from "./OfflineBanner";
+import { InstallPrompt } from "./InstallPrompt";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -31,6 +32,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         {children}
 
         <OfflineBanner />
+        <InstallPrompt />
 
         {/* Toast — bottom of screen, mobile-friendly */}
         <Toaster
