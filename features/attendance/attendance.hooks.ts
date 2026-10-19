@@ -5,8 +5,9 @@ import { toast } from "sonner";
 import { apiCheckIn, apiGetMyAttendance, type CheckInPayload } from "./attendance.api";
 import { ApiError } from "@/lib/api/client";
 
-export const TODAY_KEY     = ["attendance", "today"] as const;
-export const HISTORY_KEY   = (page: number) => ["attendance", "history", page] as const;
+// Distinct key — avoids collision with dashboard.hooks TODAY_ATTENDANCE_KEY
+export const TODAY_KEY   = ["attendance", "today", "intern"] as const;
+export const HISTORY_KEY = (page: number) => ["attendance", "history", page] as const;
 
 export function useTodayAttendance() {
   const today = new Date().toISOString().split("T")[0];
@@ -15,6 +16,12 @@ export function useTodayAttendance() {
     queryFn:  () => apiGetMyAttendance({ date: today, limit: 10 }),
     staleTime: 60 * 1000,
     refetchInterval: 2 * 60 * 1000,
+    // Return empty list instead of throwing — 404 means no intern record yet
+    // The screen handles this case explicitly
+    retry: (failCount, err) => {
+      if (err instanceof ApiError && err.status === 404) return false;
+      return failCount < 2;
+    },
   });
 }
 
@@ -23,6 +30,10 @@ export function useAttendanceHistory(page = 1) {
     queryKey: HISTORY_KEY(page),
     queryFn:  () => apiGetMyAttendance({ page, limit: 20 }),
     staleTime: 2 * 60 * 1000,
+    retry: (failCount, err) => {
+      if (err instanceof ApiError && err.status === 404) return false;
+      return failCount < 2;
+    },
   });
 }
 
@@ -36,18 +47,20 @@ export function useCheckIn() {
 
       if (record.status === "ACCEPTED") {
         toast.success(
-          record.checkType === "CHECK_IN" ? "Checked in successfully!" : "Checked out successfully!"
+          record.checkType === "CHECK_IN" ? "Checked in!" : "Checked out!"
         );
       } else if (record.status === "FLAGGED") {
-        toast.warning("Check-in recorded but flagged — location accuracy was poor. HR will review.");
+        toast.warning("Recorded but flagged — poor GPS accuracy. HR will review.");
       } else {
-        toast.error("Check-in rejected — you appear to be outside the office geofence.");
+        toast.error("Check-in rejected — you appear to be outside the office.");
       }
     },
     onError: (err) => {
       if (err instanceof ApiError) {
         if (err.status === 409) {
-          toast.error("You have already checked in/out for today.");
+          toast.error("Already checked in/out today.");
+        } else if (err.status === 404) {
+          toast.error("Your intern record hasn't been set up yet. Contact HR.");
         } else {
           toast.error(err.message);
         }
