@@ -207,3 +207,52 @@ export function useResetPassword() {
     },
   });
 }
+
+// ─── Account linking ──────────────────────────────────────────────────────────
+
+import { apiLinkPassword, apiUnlinkGoogle, apiUnlinkPassword } from "./auth.api";
+
+export function useLinkPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (password: string) => apiLinkPassword(password),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+      toast.success("Password added to your account.");
+    },
+    onError: (err) => {
+      const msg = err instanceof ApiError ? err.message : "Could not add password.";
+      toast.error(msg);
+    },
+  });
+}
+
+export function useUnlinkGoogle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiUnlinkGoogle(),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+      toast.success("Google sign-in removed.");
+    },
+    onError: (err) => {
+      const msg = err instanceof ApiError ? err.message : "Could not remove Google sign-in.";
+      toast.error(msg);
+    },
+  });
+}
+
+export function useUnlinkPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiUnlinkPassword(),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+      toast.success("Password sign-in removed.");
+    },
+    onError: (err) => {
+      const msg = err instanceof ApiError ? err.message : "Could not remove password sign-in.";
+      toast.error(msg);
+    },
+  });
+}

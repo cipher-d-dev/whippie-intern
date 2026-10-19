@@ -1,27 +1,14 @@
 import type { Metadata } from "next";
 import { LoginForm } from "./LoginForm";
-import { GoogleAuthButton } from "@/components/shared/GoogleAuthButton";
 
-export const metadata: Metadata = { title: "Sign in — Whippe Intern" };
+export const metadata: Metadata = { title: "Sign in — Whippie Intern" };
 
 export default function LoginPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1 animate-fade-up">
         <h1 className="text-2xl font-black tracking-tight text-foreground">Welcome back</h1>
-        <p className="text-sm text-muted-foreground">Sign in to your intern account</p>
-      </div>
-
-      {/* Google */}
-      <div className="animate-fade-up delay-50">
-        <GoogleAuthButton label="Sign in with Google" />
-      </div>
-
-      {/* Divider */}
-      <div className="flex items-center gap-3 animate-fade-up delay-100">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs font-medium text-muted-foreground">or continue with email</span>
-        <div className="h-px flex-1 bg-border" />
+        <p className="text-sm text-muted-foreground">Enter your email to continue</p>
       </div>
 
       <LoginForm />

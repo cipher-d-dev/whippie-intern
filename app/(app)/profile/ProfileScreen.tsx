@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   User, Mail, Phone, MapPin, GraduationCap,
   BookOpen, Hash, Building2, LogOut, Edit2, Save, X, Loader2,
-  ChevronRight, CalendarDays,
+  ChevronRight, CalendarDays, KeyRound, Chrome, Link2Off, Plus,
+  Eye, EyeOff,
 } from "lucide-react";
-import { useSession, useLogout } from "@/features/auth/auth.hooks";
+import { useSession, useLogout, useLinkPassword, useUnlinkGoogle, useUnlinkPassword } from "@/features/auth/auth.hooks";
 import { useMyInternRecord } from "@/features/dashboard/dashboard.hooks";
 import { useInternSummary } from "@/features/dashboard/dashboard.hooks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -189,6 +190,9 @@ export function ProfileScreen() {
         )}
       </InfoCard>
 
+      {/* Sign-in methods */}
+      <SignInMethodsCard authMethod={user?.authMethod ?? "PASSWORD"} className="animate-fade-up delay-200" />
+
       {/* Quick nav links */}
       <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden animate-fade-up delay-200">
         {[
@@ -264,6 +268,121 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
       <p className={cn("text-lg font-extrabold animate-count-in", colorMap[color])}>{value}</p>
       <p className="text-[10px] font-medium text-muted-foreground mt-0.5">{label}</p>
     </div>
+  );
+}
+
+function SignInMethodsCard({ authMethod, className }: { authMethod: string; className?: string }) {
+  const linkPassword   = useLinkPassword();
+  const unlinkGoogle   = useUnlinkGoogle();
+  const unlinkPassword = useUnlinkPassword();
+
+  const [showAddPassword, setShowAddPassword] = useState(false);
+  const [newPw, setNewPw]                     = useState("");
+  const [showNewPw, setShowNewPw]             = useState(false);
+
+  const hasPassword = authMethod === "PASSWORD" || authMethod === "BOTH";
+  const hasGoogle   = authMethod === "GOOGLE"   || authMethod === "BOTH";
+  const canUnlink   = authMethod === "BOTH"; // can only remove one if both are present
+
+  return (
+    <InfoCard title="Sign-in methods" className={className}>
+      {/* Password row */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
+            <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
+          </span>
+          <p className="text-sm font-medium text-foreground">Password</p>
+        </div>
+        {hasPassword ? (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-emerald-500">Active</span>
+            {canUnlink && (
+              <button
+                onClick={() => unlinkPassword.mutate()}
+                disabled={unlinkPassword.isPending}
+                className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 transition-colors"
+                aria-label="Remove password"
+              >
+                {unlinkPassword.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3 w-3" />}
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowAddPassword((v) => !v)}
+            className="flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline underline-offset-4"
+          >
+            <Plus className="h-3.5 w-3.5" />Add
+          </button>
+        )}
+      </div>
+
+      {/* Inline add-password form */}
+      {showAddPassword && (
+        <div className="space-y-2 pt-1 animate-fade-up">
+          <div className="relative">
+            <input
+              type={showNewPw ? "text" : "password"}
+              placeholder="New password (min 8 chars + number)"
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              className="w-full rounded-xl border border-input bg-background px-3 pr-10 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPw((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            >
+              {showNewPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" className="flex-1 h-8 text-xs"
+              disabled={linkPassword.isPending || newPw.length < 8}
+              onClick={() => linkPassword.mutate(newPw, { onSuccess: () => { setShowAddPassword(false); setNewPw(""); } })}
+            >
+              {linkPassword.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Set password"}
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 text-xs px-3" onClick={() => setShowAddPassword(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Google row */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
+            <Chrome className="h-3.5 w-3.5 text-muted-foreground" />
+          </span>
+          <p className="text-sm font-medium text-foreground">Google</p>
+        </div>
+        {hasGoogle ? (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-emerald-500">Active</span>
+            {canUnlink && (
+              <button
+                onClick={() => unlinkGoogle.mutate()}
+                disabled={unlinkGoogle.isPending}
+                className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 transition-colors"
+                aria-label="Remove Google"
+              >
+                {unlinkGoogle.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2Off className="h-3 w-3" />}
+              </button>
+            )}
+          </div>
+        ) : (
+          <a
+            href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"}/api/v1/auth/google`}
+            className="flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline underline-offset-4"
+          >
+            <Plus className="h-3.5 w-3.5" />Add
+          </a>
+        )}
+      </div>
+    </InfoCard>
   );
 }
 

@@ -38,6 +38,8 @@ export function GoogleSuccessHandler() {
         const err    = params.get("error");
         if (err === "account_rejected") {
           setError("Your account has been rejected. Contact HR.");
+        } else if (err === "email_unverified_link_first") {
+          setError("An account already exists with this email but it hasn't been verified yet. Sign in with your password first to link Google.");
         } else {
           setError("Google sign-in failed. Please try again.");
         }

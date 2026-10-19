@@ -114,3 +114,23 @@ export async function apiForgotPassword(email: string) {
 export async function apiResetPassword(token: string, password: string) {
   await api.post<unknown>("/api/v1/auth/reset-password", { token, password });
 }
+
+// ─── Account linking ──────────────────────────────────────────────────────────
+
+export async function apiLinkPassword(password: string) {
+  await api.post<unknown>("/api/v1/auth/link-password", { password }, {
+    headers: authHeaders(),
+  });
+}
+
+export async function apiUnlinkGoogle() {
+  await api.post<unknown>("/api/v1/auth/unlink-google", undefined, {
+    headers: authHeaders(),
+  });
+}
+
+export async function apiUnlinkPassword() {
+  await api.post<unknown>("/api/v1/auth/unlink-password", undefined, {
+    headers: authHeaders(),
+  });
+}
