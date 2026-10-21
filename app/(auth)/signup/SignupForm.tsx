@@ -43,7 +43,7 @@ export function SignupForm() {
 
   const signup = useMutation({
     mutationFn: ({ confirmPassword: _, ...v }: FormValues) => apiSignup({ ...v, role: "INTERN" }),
-    onSuccess: (data) => { qc.setQueryData(SESSION_QUERY_KEY, data.user); router.replace("/verification-pending"); },
+    onSuccess: (data) => { qc.setQueryData(SESSION_QUERY_KEY, data.user); router.replace("/verify-email"); },
     onError: (err) => {
       if (err instanceof ApiError && err.errors.length > 0) {
         err.errors.forEach(({ field, message }) => setError(field as keyof FormValues, { type: "server", message }));

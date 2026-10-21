@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { VerificationPendingClient } from "./VerificationPendingClient";
 
 export const metadata: Metadata = {
-  title: "Awaiting verification — Whippe Intern",
+  title: "Awaiting verification — Whippie Intern",
 };
 
 export default function VerificationPendingPage() {

@@ -13,7 +13,6 @@ export function AccountRejectedClient() {
         <div className="absolute -top-32 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-rose-400/10 blur-3xl" />
       </div>
 
-      {/* Icon */}
       <div className="mb-6 animate-scale-in">
         <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-rose-50 dark:bg-rose-900/20 shadow-card border border-rose-200/50 dark:border-rose-700/30">
           <XCircle className="h-10 w-10 text-rose-500" />
@@ -25,7 +24,7 @@ export function AccountRejectedClient() {
           Account not approved
         </h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Your Whippe account was not approved by HR. If you believe this is a
+          Your Whippie account was not approved by HR. If you believe this is a
           mistake, please contact the HR team directly.
         </p>
       </div>
@@ -36,8 +35,9 @@ export function AccountRejectedClient() {
             <Mail className="h-4 w-4 text-muted-foreground" />
           </div>
           <p className="text-sm text-muted-foreground leading-snug">
-            Reach out to HR at <span className="font-medium text-foreground">hr@whippe.dev</span> to
-            query your application status.
+            Reach out to HR at{" "}
+            <span className="font-medium text-foreground">hr@whippie.app</span>{" "}
+            to query your application status.
           </p>
         </div>
       </div>

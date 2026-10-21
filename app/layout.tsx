@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/shared/Providers";
+import { checkEnv } from "@/lib/env-check";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -41,6 +42,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Runs once at server startup — logs warnings for missing env vars
+  checkEnv();
+
   return (
     <html lang="en" suppressHydrationWarning className={plusJakartaSans.variable}>
       <head>

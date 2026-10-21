@@ -5,8 +5,9 @@ import { toast } from "sonner";
 import { apiCheckIn, apiGetMyAttendance, type CheckInPayload } from "./attendance.api";
 import { ApiError } from "@/lib/api/client";
 
-// Distinct key — avoids collision with dashboard.hooks TODAY_ATTENDANCE_KEY
-export const TODAY_KEY   = ["attendance", "today", "intern"] as const;
+// Shared key — same as dashboard.hooks TODAY_ATTENDANCE_KEY so a check-in
+// from the attendance page also invalidates the home dashboard card.
+export const TODAY_KEY   = ["attendance", "today"] as const;
 export const HISTORY_KEY = (page: number) => ["attendance", "history", page] as const;
 
 export function useTodayAttendance() {

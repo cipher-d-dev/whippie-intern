@@ -11,15 +11,10 @@ export function VerificationPendingClient() {
   const logout = useLogout();
   const router = useRouter();
 
-  // If HR approved while waiting, redirect immediately
   useEffect(() => {
-    if (user?.status === "ACTIVE") {
-      router.replace("/home");
-    } else if (user?.status === "REJECTED") {
-      router.replace("/account-rejected");
-    } else if (user?.status === "UNVERIFIED_EMAIL") {
-      router.replace("/verify-email");
-    }
+    if (user?.status === "ACTIVE")            router.replace("/home");
+    else if (user?.status === "REJECTED")     router.replace("/account-rejected");
+    else if (user?.status === "UNVERIFIED_EMAIL") router.replace("/verify-email");
   }, [user?.status, router]);
 
   return (
@@ -55,9 +50,9 @@ export function VerificationPendingClient() {
       {/* Steps card */}
       <div className="mt-8 w-full max-w-sm rounded-2xl border border-border/60 bg-card p-5 shadow-card space-y-3 animate-fade-up delay-100">
         {[
-          { icon: Mail,         text: "You'll receive an email once HR reviews your account." },
-          { icon: Clock,        text: "Accounts pending review expire after 30 days." },
-          { icon: RefreshCw,    text: "Tap \"Check status\" below if you've already been approved." },
+          { icon: Mail,      text: "You'll receive an email once HR reviews your account." },
+          { icon: Clock,     text: "Accounts pending review expire after 30 days." },
+          { icon: RefreshCw, text: 'Tap "Check status" below if you\'ve already been approved.' },
         ].map(({ icon: Icon, text }, i) => (
           <div key={i} className="flex items-start gap-3">
             <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -79,7 +74,6 @@ export function VerificationPendingClient() {
           <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           Check status
         </Button>
-
         <Button
           variant="ghost"
           className="w-full gap-2 text-muted-foreground"
