@@ -14,6 +14,7 @@ import type { NotificationType } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 // ─── Icon + nav routing per notification type ─────────────────────────────────
@@ -63,52 +64,74 @@ export function NotificationsScreen() {
   const unreadCount   = notifications.filter((n) => !n.read).length;
 
   const handleTap = (n: Notification) => {
-    if (!n.read) markRead.mutate(n.id);
-    const cfg   = NOTIF_CONFIG[n.type];
-    const route = cfg?.route && n.relatedEntity?.id ? cfg.route(n.relatedEntity.id) : null;
-    if (route) router.push(route);
+    const notifId = n.id || n._id;
+    if (!n.read && notifId) {
+      markRead.mutate(notifId);
+    }
+    const route = NOTIF_CONFIG[n.type]?.route;
+    if (route && n.relatedEntity?.id) {
+      router.push(route(n.relatedEntity.id));
+    }
   };
 
   return (
-    <div className="flex flex-col pb-4">
-
+    <div className="flex flex-col min-h-full pb-8">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/60 px-4 pt-5 pb-3">
-        <div className="flex items-center justify-between animate-fade-up">
-          <h1 className="text-xl font-extrabold tracking-tight text-foreground">Notifications</h1>
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border/50 bg-background/90 px-4 py-3.5 backdrop-blur-xl">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Notifications</h1>
+          {unreadCount > 0 && (
+            <Badge variant="secondary" className="h-5 px-1.5 text-[11px] font-semibold bg-primary/10 text-primary">
+              {unreadCount} new
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              className="gap-1.5 text-xs"
-              onClick={() => markAllRead.mutate()}
               disabled={markAllRead.isPending}
+              onClick={() => markAllRead.mutate()}
+              className="h-8 gap-1.5 text-xs font-semibold text-primary hover:bg-primary/10"
             >
-              {markAllRead.isPending
-                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                : <CheckCheck className="h-3.5 w-3.5" />}
+              {markAllRead.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CheckCheck className="h-3.5 w-3.5" />
+              )}
               Mark all read
             </Button>
           )}
         </div>
+      </div>
 
-        {/* Filter tabs */}
-        <div className="mt-3 flex rounded-2xl bg-muted p-1 gap-1">
-          {(["all", "unread"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => { setFilter(f); setPage(1); }}
-              className={cn(
-                "flex-1 rounded-xl py-2 text-xs font-semibold transition-all duration-200 capitalize",
-                filter === f
-                  ? "bg-card text-foreground shadow-card"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {f === "all" ? "All" : `Unread${unreadCount > 0 ? ` (${unreadCount})` : ""}`}
-            </button>
-          ))}
-        </div>
+      {/* Filter tabs */}
+      <div className="flex gap-2 px-4 py-3 border-b border-border/40">
+        <button
+          onClick={() => { setFilter("all"); setPage(1); }}
+          className={cn(
+            "rounded-full px-3.5 py-1 text-xs font-medium transition-colors",
+            filter === "all"
+              ? "bg-primary text-primary-foreground font-semibold"
+              : "bg-muted text-muted-foreground hover:text-foreground",
+          )}
+        >
+          All
+        </button>
+        <button
+          onClick={() => { setFilter("unread"); setPage(1); }}
+          className={cn(
+            "rounded-full px-3.5 py-1 text-xs font-medium transition-colors",
+            filter === "unread"
+              ? "bg-primary text-primary-foreground font-semibold"
+              : "bg-muted text-muted-foreground hover:text-foreground",
+          )}
+        >
+          Unread only
+        </button>
       </div>
 
       {/* List */}
@@ -116,16 +139,24 @@ export function NotificationsScreen() {
         {isLoading ? (
           <div className="px-4 pt-4 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
+              <Skeleton key={i} className="h-16 w-full rounded-2xl" />
             ))}
           </div>
         ) : notifications.length === 0 ? (
           <EmptyState filter={filter} />
         ) : (
           <ul className="divide-y divide-border/40">
-            {notifications.map((n, i) => (
-              <NotifRow key={n.id} notification={n} index={i} onTap={() => handleTap(n)} />
-            ))}
+            {notifications.map((n, i) => {
+              const uniqueKey = n.id || n._id || `notif-${n.createdAt}-${i}`;
+              return (
+                <NotifRow
+                  key={uniqueKey}
+                  notification={n}
+                  index={i}
+                  onTap={() => handleTap(n)}
+                />
+              );
+            })}
           </ul>
         )}
 
@@ -172,8 +203,8 @@ function NotifRow({ notification: n, index, onTap }: {
       role={tappable ? "button" : undefined}
       onClick={tappable ? onTap : undefined}
       className={cn(
-        "flex items-start gap-3 px-4 py-4 transition-colors animate-fade-up",
-        !n.read && "bg-primary/[0.03]",
+        "flex items-start gap-3 px-4 py-3.5 transition-colors animate-fade-up",
+        !n.read && "bg-primary/[0.03] dark:bg-primary/[0.06]",
         tappable && "cursor-pointer hover:bg-muted/40 active:bg-muted/60",
       )}
       style={{ animationDelay: `${index * 40}ms` }}

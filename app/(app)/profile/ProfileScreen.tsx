@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   User, Mail, Phone, MapPin, GraduationCap,
   BookOpen, Hash, Building2, LogOut, Edit2, Save, X, Loader2,
   ChevronRight, CalendarDays, KeyRound, Chrome, Link2Off, Plus,
-  Eye, EyeOff,
+  Eye, EyeOff, Bell, BellOff,
 } from "lucide-react";
 import { useSession, useLogout, useLinkPassword, useUnlinkGoogle, useUnlinkPassword } from "@/features/auth/auth.hooks";
 import { useMyInternRecord } from "@/features/dashboard/dashboard.hooks";
@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { subscribeToPush, unsubscribeFromPush, getPushPermissionState } from "@/lib/push";
 
 export function ProfileScreen() {
   const router  = useRouter();
@@ -192,6 +193,9 @@ export function ProfileScreen() {
 
       {/* Sign-in methods */}
       <SignInMethodsCard authMethod={user?.authMethod ?? "PASSWORD"} className="animate-fade-up delay-200" />
+
+      {/* Push notifications toggle */}
+      <PushNotificationsCard className="animate-fade-up delay-225" />
 
       {/* Quick nav links */}
       <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden animate-fade-up delay-200">
@@ -380,6 +384,82 @@ function SignInMethodsCard({ authMethod, className }: { authMethod: string; clas
           >
             <Plus className="h-3.5 w-3.5" />Add
           </a>
+        )}
+      </div>
+    </InfoCard>
+  );
+}
+
+function PushNotificationsCard({ className }: { className?: string }) {
+  const [permission, setPermission] = useState<"granted" | "denied" | "prompt" | "unsupported" | "loading">("loading");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    getPushPermissionState().then(setPermission);
+  }, []);
+
+  const handleEnable = async () => {
+    setBusy(true);
+    const result = await subscribeToPush();
+    setBusy(false);
+    if (result === "subscribed") {
+      setPermission("granted");
+      toast.success("Push notifications enabled");
+    } else if (result === "denied") {
+      setPermission("denied");
+      toast.error("Notifications blocked — enable them in your browser settings");
+    } else if (result === "already_subscribed") {
+      setPermission("granted");
+      toast.info("Already subscribed");
+    }
+  };
+
+  const handleDisable = async () => {
+    setBusy(true);
+    await unsubscribeFromPush();
+    setBusy(false);
+    setPermission("prompt");
+    toast.success("Push notifications disabled");
+  };
+
+  if (permission === "unsupported") return null;
+
+  return (
+    <InfoCard title="Notifications" className={className}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
+            {permission === "granted"
+              ? <Bell    className="h-3.5 w-3.5 text-violet-500" />
+              : <BellOff className="h-3.5 w-3.5 text-muted-foreground" />
+            }
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Push notifications</p>
+            <p className="text-[11px] text-muted-foreground">
+              {permission === "granted"  && "You'll receive alerts in the background"}
+              {permission === "denied"   && "Blocked — change in browser settings"}
+              {permission === "prompt"   && "Get notified even when the app is closed"}
+              {permission === "loading"  && "Checking…"}
+            </p>
+          </div>
+        </div>
+
+        {permission === "loading" && (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        )}
+        {permission === "granted" && (
+          <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={handleDisable} disabled={busy}>
+            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Disable"}
+          </Button>
+        )}
+        {(permission === "prompt") && (
+          <Button size="sm" className="h-7 text-xs shrink-0" onClick={handleEnable} disabled={busy}>
+            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Enable"}
+          </Button>
+        )}
+        {permission === "denied" && (
+          <span className="text-[11px] font-semibold text-rose-500 shrink-0">Blocked</span>
         )}
       </div>
     </InfoCard>

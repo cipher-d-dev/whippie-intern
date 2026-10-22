@@ -3,7 +3,8 @@ import { authHeaders } from "@/features/auth/auth.api";
 import type { ApiResponse, ApiPaginatedResponse, NotificationType } from "@/types";
 
 export interface Notification {
-  id: string;
+  id?: string;
+  _id?: string;
   type: NotificationType;
   title: string;
   body: string;
@@ -22,6 +23,15 @@ export async function apiGetNotifications(params?: { read?: boolean; page?: numb
     `/api/v1/notifications?${sp.toString()}`,
     { headers: authHeaders() }
   );
+
+  // Normalize _id to id if missing
+  if (res.data) {
+    res.data = res.data.map((n) => ({
+      ...n,
+      id: n.id ?? n._id ?? "",
+    }));
+  }
+
   return res;
 }
 

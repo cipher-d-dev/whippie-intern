@@ -13,7 +13,7 @@
  *       none     → "no account" message with sign-up link
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,6 +25,7 @@ import { api, ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import type { ApiResponse } from "@/types";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 type AuthMethod = "password" | "google" | "both" | "none";
 
@@ -52,6 +53,20 @@ export function LoginForm() {
   const [detecting,    setDetecting]    = useState(false);
   const [detectError,  setDetectError]  = useState("");
   const [showPw,       setShowPw]       = useState(false);
+
+  const searchParams = useSearchParams();
+
+  // Show Google OAuth error if we were redirected back here from the API
+  useEffect(() => {
+    const err = searchParams.get("error");
+    if (!err) return;
+    const messages: Record<string, string> = {
+      account_rejected:           "Your account has been rejected. Contact HR.",
+      email_unverified_link_first: "An account with this email exists but isn't verified yet. Sign in with your password to link Google.",
+      google_failed:              "Google sign-in failed. Please try again.",
+    };
+    setDetectError(messages[err] ?? "Something went wrong. Please try again.");
+  }, [searchParams]);
 
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
 

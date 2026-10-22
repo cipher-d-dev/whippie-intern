@@ -1,11 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   ClipboardCheck, ClipboardList, CheckCircle2,
   FileText, Star, FolderOpen, Upload, Loader2,
-  Download, AlertCircle,
+  Download, FileCheck2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useMyInternRecord } from "@/features/dashboard/dashboard.hooks";
@@ -15,6 +14,7 @@ import { getDocumentDownloadUrl, type ChecklistItem } from "@/features/documents
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 const EVENT_CFG: Record<TimelineEventType, { icon: React.ElementType; color: string; bg: string }> = {
@@ -45,257 +45,303 @@ export function TimelineScreen() {
   );
 
   return (
-    <div className="flex flex-col pb-4">
+    <div className="flex flex-col pb-8">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/60 px-4 pt-5 pb-3">
-        <h1 className="text-xl font-extrabold tracking-tight text-foreground animate-fade-up">Timeline</h1>
-        <div className="mt-3 flex rounded-2xl bg-muted p-1 gap-1">
+      <div className="sticky top-0 z-20 bg-background/90 backdrop-blur-xl border-b border-border/50 px-4 py-3.5">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Activity & Documents</h1>
+          <ThemeToggle />
+        </div>
+
+        {/* Tab switcher */}
+        <div className="mt-3 flex rounded-xl bg-muted/60 p-1 border border-border/40 gap-1">
           {(["timeline", "documents"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={cn(
-                "flex-1 rounded-xl py-2 text-xs font-semibold transition-all duration-200 capitalize",
-                tab === t ? "bg-card text-foreground shadow-card" : "text-muted-foreground hover:text-foreground",
+                "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all duration-200 capitalize",
+                tab === t
+                  ? "bg-card text-foreground shadow-xs border border-border/50 font-bold"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {t === "timeline" ? "📅 Timeline" : "📁 Documents"}
+              {t === "timeline" ? "Milestones" : "Documents"}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Timeline tab */}
-      {tab === "timeline" && (
-        <div className="px-4 pt-5">
-          {timelineLoading ? (
-            <div className="space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
-            </div>
-          ) : !timeline || timeline.data.length === 0 ? (
-            <EmptyTimeline />
-          ) : (
-            <div className="relative">
-              <div className="absolute left-[19px] top-0 bottom-0 w-px bg-border/60" aria-hidden />
-              <ul className="space-y-0">
-                {timeline.data.map((event, i) => (
-                  <TimelineRow key={i} event={event} index={i} />
-                ))}
-              </ul>
-              {timeline.totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-between py-2">
-                  <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="text-xs font-medium text-primary disabled:opacity-40">← Earlier</button>
-                  <span className="text-xs text-muted-foreground">{page} / {timeline.totalPages}</span>
-                  <button disabled={page >= timeline.totalPages} onClick={() => setPage((p) => p + 1)} className="text-xs font-medium text-primary disabled:opacity-40">Later →</button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Documents tab */}
-      {tab === "documents" && (
-        <div className="px-4 pt-5 space-y-3">
-          {docsLoading ? (
-            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)
-          ) : !checklist || checklist.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground text-sm">No document requirements yet.</div>
-          ) : (
-            checklist.map((item, i) => (
-              <DocumentCard
-                key={item.requirement.id}
-                item={item}
-                internId={intern?.id}
-                index={i}
-              />
-            ))
-          )}
-        </div>
-      )}
+      <div className="px-4 pt-4">
+        {tab === "timeline" ? (
+          <TimelineTab
+            timeline={timeline}
+            isLoading={timelineLoading}
+            page={page}
+            setPage={setPage}
+          />
+        ) : (
+          <DocumentsTab checklist={checklist} isLoading={docsLoading} internId={intern?.id} />
+        )}
+      </div>
     </div>
   );
 }
 
-// ─── Document card with upload ────────────────────────────────────────────────
+// ─── Timeline Tab ─────────────────────────────────────────────────────────────
 
-function DocumentCard({
-  item,
-  internId,
-  index,
+function TimelineTab({
+  timeline,
+  isLoading,
+  page,
+  setPage,
 }: {
-  item: ChecklistItem;
-  internId?: string;
-  index: number;
+  timeline: { data: TimelineEvent[]; totalPages: number } | undefined;
+  isLoading: boolean;
+  page: number;
+  setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const upload  = useUploadDocument(internId);
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex gap-3">
+            <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-  const doc    = item.document;
-  const status = doc?.status ?? null;
+  const events = timeline?.data ?? [];
 
-  // Can upload if: no doc yet, or doc was rejected
-  const canUpload = !status || status === "REJECTED" || status === "PENDING";
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !doc) return;
-    upload.mutate({ documentId: doc.id, file });
-    // Reset input so same file can be re-selected
-    e.target.value = "";
+  if (events.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/70 mb-3">
+          <ClipboardList className="h-6 w-6 text-muted-foreground/60" />
+        </div>
+        <p className="text-sm font-semibold text-foreground">No activity recorded yet</p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+          Your daily check-ins, task completions, and evaluations will be tracked here sequentially.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div
-      className="rounded-2xl border border-border/60 bg-card p-4 shadow-card animate-fade-up space-y-3"
-      style={{ animationDelay: `${index * 50}ms` }}
-    >
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-semibold text-foreground">{item.requirement.label}</p>
-            {item.requirement.isRequired && (
-              <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Required</span>
-            )}
-          </div>
-          {item.requirement.description && (
-            <p className="text-xs text-muted-foreground mt-0.5">{item.requirement.description}</p>
-          )}
-        </div>
-        <DocStatusBadge status={status} />
+    <div className="space-y-4 animate-fade-up">
+      <div className="relative pl-6 space-y-6 before:absolute before:bottom-2 before:top-2 before:left-[11px] before:w-[2px] before:bg-border/60">
+        {events.map((evt, idx) => {
+          const cfg = EVENT_CFG[evt.type] ?? {
+            icon: ClipboardList,
+            color: "text-muted-foreground",
+            bg: "bg-muted",
+          };
+          const Icon = cfg.icon;
+
+          return (
+            <div key={evt.refId ?? idx} className="relative flex items-start gap-3">
+              {/* Timeline marker */}
+              <div
+                className={cn(
+                  "absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full border-2 border-background ring-1 ring-border/80 shadow-xs",
+                  cfg.bg,
+                )}
+              >
+                <Icon className={cn("h-3 w-3", cfg.color)} />
+              </div>
+
+              {/* Event card */}
+              <div className="flex-1 rounded-2xl border border-border/70 bg-card p-3.5 shadow-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-xs font-bold text-foreground">{evt.title}</h4>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {new Date(evt.date).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </span>
+                </div>
+                {evt.detail && (
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                    {evt.detail}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Uploaded filename */}
-      {doc?.originalFilename && (
-        <div className="flex items-center gap-2 rounded-xl bg-muted/60 px-3 py-2">
-          <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-          <span className="text-xs text-muted-foreground truncate">{doc.originalFilename}</span>
-        </div>
-      )}
-
-      {/* Rejection reason */}
-      {status === "REJECTED" && (
-        <div className="flex items-start gap-2 rounded-xl bg-rose-50 dark:bg-rose-900/10 border border-rose-200/60 dark:border-rose-800/40 px-3 py-2">
-          <AlertCircle className="h-3.5 w-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-rose-600 dark:text-rose-400">
-            Rejected — please re-upload a corrected document.
-          </p>
-        </div>
-      )}
-
-      {/* Actions */}
-      {doc && (
-        <div className="flex items-center gap-2">
-          {/* Download */}
-          <a
-            href={getDocumentDownloadUrl(doc.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-xl border border-border/60 bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download
-          </a>
-
-          {/* Re-upload */}
-          {canUpload && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 h-8 text-xs gap-1.5"
-                disabled={upload.isPending}
-                onClick={() => fileRef.current?.click()}
-              >
-                {upload.isPending
-                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Uploading…</>
-                  : <><Upload className="h-3.5 w-3.5" />Re-upload</>
-                }
-              </Button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Upload button when no doc yet */}
-      {!doc && (
-        <>
+      {timeline && timeline.totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4 border-t border-border/40 text-xs text-muted-foreground">
           <Button
+            variant="outline"
             size="sm"
-            className="w-full h-9 text-xs gap-1.5"
-            disabled={upload.isPending}
-            onClick={() => fileRef.current?.click()}
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="h-8 text-xs rounded-xl"
           >
-            {upload.isPending
-              ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Uploading…</>
-              : <><Upload className="h-3.5 w-3.5" />Upload document</>
-            }
+            Previous
           </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-        </>
+          <span>Page {page} of {timeline.totalPages}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= timeline.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="h-8 text-xs rounded-xl"
+          >
+            Next
+          </Button>
+        </div>
       )}
     </div>
   );
 }
 
-// ─── Timeline row ─────────────────────────────────────────────────────────────
+// ─── Documents Tab ────────────────────────────────────────────────────────────
 
-function TimelineRow({ event, index }: { event: TimelineEvent; index: number }) {
-  const cfg  = EVENT_CFG[event.type];
-  const Icon = cfg.icon;
-  return (
-    <li className="relative flex gap-4 pb-6 animate-fade-up" style={{ animationDelay: `${index * 40}ms` }}>
-      <span className={cn("relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border-2 border-background", cfg.bg)}>
-        <Icon className={cn("h-4 w-4", cfg.color)} />
-      </span>
-      <div className="min-w-0 flex-1 pt-1.5">
-        <p className="text-sm font-semibold text-foreground leading-snug">{event.title}</p>
-        {event.detail && <p className="text-xs text-muted-foreground mt-0.5">{event.detail}</p>}
-        <p className="text-[10px] text-muted-foreground/70 mt-1">
-          {new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-        </p>
-      </div>
-    </li>
-  );
-}
+function DocumentsTab({
+  checklist,
+  isLoading,
+  internId,
+}: {
+  checklist: ChecklistItem[] | undefined;
+  isLoading: boolean;
+  internId?: string;
+}) {
+  const uploadDoc = useUploadDocument(internId);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
 
-// ─── Document status badge ────────────────────────────────────────────────────
-
-function DocStatusBadge({ status }: { status: string | null }) {
-  if (!status) return <Badge variant="secondary" className="text-[10px] flex-shrink-0">Not submitted</Badge>;
-  const cfg: Record<string, { label: string; variant: "success" | "warning" | "destructive" | "default" | "secondary" }> = {
-    VERIFIED:          { label: "Verified",   variant: "success" },
-    DIGITAL_RECEIVED:  { label: "Received",   variant: "default" },
-    PHYSICAL_RECEIVED: { label: "Received",   variant: "default" },
-    REJECTED:          { label: "Rejected",   variant: "destructive" },
-    PENDING:           { label: "Pending",    variant: "secondary" },
+  const handleSelectFile = (docId: string) => {
+    setSelectedDocId(docId);
+    fileInputRef.current?.click();
   };
-  const c = cfg[status] ?? { label: status, variant: "secondary" as const };
-  return <Badge variant={c.variant} className="text-[10px] flex-shrink-0">{c.label}</Badge>;
-}
 
-function EmptyTimeline() {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedDocId) return;
+    uploadDoc.mutate({ documentId: selectedDocId, file });
+    e.target.value = "";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+        ))}
+      </div>
+    );
+  }
+
+  const items = checklist ?? [];
+
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-up">
-      <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted animate-float">
-        <ClipboardCheck className="h-7 w-7 text-muted-foreground" />
-      </span>
-      <p className="text-sm font-medium text-foreground">No timeline events yet</p>
-      <p className="mt-1 text-xs text-muted-foreground">Events appear as you check in, complete tasks, and submit reports.</p>
+    <div className="space-y-4 animate-fade-up">
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-3.5 text-xs text-muted-foreground leading-relaxed">
+        <span className="font-semibold text-foreground">Required Program Documents: </span>
+        Please provide official credentials, introduction letters, and signed agreements. Files are stored securely.
+      </div>
+
+      <div className="space-y-3">
+        {items.map((item) => {
+          const isUploaded = !!item.document;
+          const status = item.document?.status ?? "PENDING";
+          const docId = item.document?.id ?? item.requirement.id;
+
+          return (
+            <div
+              key={item.requirement.id}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-xs transition-all hover:border-border"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                    isUploaded
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {isUploaded ? <FileCheck2 className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />}
+                </div>
+
+                <div className="min-w-0">
+                  <h4 className="text-sm font-semibold text-foreground truncate">
+                    {item.requirement.label}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    {item.requirement.isRequired ? (
+                      <span className="text-amber-600 dark:text-amber-400 font-medium">Mandatory</span>
+                    ) : (
+                      "Optional"
+                    )}
+                    {item.document?.originalFilename && ` · ${item.document.originalFilename}`}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                {isUploaded && item.document ? (
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={status === "VERIFIED" ? "default" : "outline"}
+                      className="text-[10px]"
+                    >
+                      {status}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      asChild
+                    >
+                      <a
+                        href={getDocumentDownloadUrl(item.document.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Download file"
+                      >
+                        <Download className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleSelectFile(docId)}
+                    disabled={uploadDoc.isPending}
+                    className="h-8 rounded-xl text-xs gap-1 font-semibold"
+                  >
+                    {uploadDoc.isPending && selectedDocId === docId ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
+                    Upload
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

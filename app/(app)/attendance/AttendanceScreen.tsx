@@ -221,7 +221,7 @@ function CheckInCard({ pendingType, locState, locData, locError, onAcquire, onSu
         <div className="space-y-3">
           <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/60 dark:border-emerald-800/30 px-3 py-2.5">
             <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-              📍 Location acquired · ±{Math.round(locData.accuracy)}m accuracy
+              Location acquired · ±{Math.round(locData.accuracy)}m accuracy
             </p>
           </div>
           <Button className="w-full gap-2" size="lg" onClick={onSubmit} disabled={locState === ("submitting" as LocationState)}>

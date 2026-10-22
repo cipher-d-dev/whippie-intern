@@ -22,8 +22,8 @@ import { Button } from "@/components/ui/button";
  *  4. Redirects based on account status
  */
 export function GoogleSuccessHandler() {
-  const router     = useRouter();
-  const qc         = useQueryClient();
+  const router = useRouter();
+  const qc     = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

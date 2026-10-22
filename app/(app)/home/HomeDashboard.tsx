@@ -15,6 +15,8 @@ import { NotificationsFeedCard } from "./cards/NotificationsFeedCard";
 import { ProgressCard }         from "./cards/ProgressCard";
 import { ReportStatusCard }     from "./cards/ReportStatusCard";
 import { DashboardSkeleton }    from "./DashboardSkeleton";
+import { ThemeToggle }          from "@/components/shared/ThemeToggle";
+import { WhippieLogo }          from "@/components/shared/WhippieLogo";
 import { useRouter }            from "next/navigation";
 
 export function HomeDashboard() {
@@ -44,46 +46,44 @@ export function HomeDashboard() {
   ) ?? false;
 
   return (
-    <div className="flex flex-col gap-5 px-4 pb-8 pt-6">
+    <div className="flex flex-col gap-5 px-4 pb-8 pt-5">
 
-      {/* ── Greeting ────────────────────────────────────────────── */}
+      {/* ── Greeting & Top Bar ────────────────────────────────────────────── */}
       <div className="flex items-center justify-between animate-fade-up">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{greeting}</p>
-          <h1 className="text-[1.75rem] font-black tracking-tight text-foreground leading-tight">
-            {firstName} 👋
-          </h1>
-          {intern && (
-            <p className="mt-1 text-xs font-medium text-muted-foreground">
-              {(intern.department as any)?.name
-                ? `${(intern.department as any).name} · `
-                : ""}
-              {intern.internshipType === "NYSC_IT" ? "NYSC IT" : "Intern"}
-            </p>
-          )}
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-card border border-border/80 shadow-xs">
+            <WhippieLogo size={32} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{greeting}</p>
+            <h1 className="text-2xl font-black tracking-tight text-foreground leading-tight">
+              {firstName}
+            </h1>
+            {intern && (
+              <p className="text-[11px] font-medium text-muted-foreground">
+                {(intern.department as any)?.name
+                  ? `${(intern.department as any).name} · `
+                  : ""}
+                {intern.internshipType === "NYSC_IT" ? "NYSC IT" : "Intern"}
+              </p>
+            )}
+          </div>
         </div>
-        {/* Logo top-right */}
-        <img
-          src="/logo-light.png"
-          alt="Whippie"
-          width={40}
-          height={40}
-          className="dark:hidden opacity-80"
-        />
-        <img
-          src="/logo-dark.png"
-          alt="Whippie"
-          width={40}
-          height={40}
-          className="hidden dark:block opacity-80"
-        />
+
+        {/* Action Toggle */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* ── Urgent: changes requested ───────────────────────────── */}
       {hasFeedback && (
-        <div className="animate-scale-in rounded-2xl border border-amber-300/40 bg-gradient-to-br from-amber-50 to-amber-100/60 dark:from-amber-900/20 dark:to-amber-800/10 px-4 py-3">
-          <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
-            ⚠️ A task needs your attention — supervisor requested changes.
+        <div className="animate-scale-in flex items-center gap-3 rounded-2xl border border-amber-300/40 bg-amber-50/70 dark:bg-amber-950/20 px-4 py-3 text-amber-900 dark:text-amber-200">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-200/50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+            <span className="text-xs font-bold">!</span>
+          </div>
+          <p className="text-xs font-semibold leading-normal">
+            A task needs your attention — your supervisor requested changes.
           </p>
         </div>
       )}
@@ -101,29 +101,26 @@ export function HomeDashboard() {
         <StatPill
           label="Active tasks"
           value={pendingTasks.length}
-          gradient="from-violet-500 to-violet-600"
-          className="animate-fade-up delay-150"
+          gradient="from-violet-600 to-indigo-600 dark:from-violet-500 dark:to-indigo-500"
           onClick={() => router.push("/tasks")}
         />
         <StatPill
           label="Unread alerts"
           value={unreadCount}
-          gradient={unreadCount > 0 ? "from-amber-400 to-amber-500" : "from-emerald-400 to-emerald-500"}
-          className="animate-fade-up delay-200"
+          gradient="from-blue-600 to-cyan-600 dark:from-blue-500 dark:to-cyan-500"
           onClick={() => router.push("/notifications")}
         />
       </div>
 
-      {/* ── Tasks ────────────────────────────────────────────────── */}
+      {/* ── Summary & tasks overview ─────────────────────────────── */}
       <TasksSummaryCard
-        tasks={pendingTasks}
-        summary={summary?.tasks}
+        tasks={activeTasks?.data ?? []}
         isLoading={tasksLoading}
         className="animate-fade-up delay-200"
       />
 
       {/* ── Progress ─────────────────────────────────────────────── */}
-      {intern && summary && (
+      {summary && intern && (
         <ProgressCard
           intern={intern}
           summary={summary}
@@ -131,7 +128,7 @@ export function HomeDashboard() {
         />
       )}
 
-      {/* ── Report reminder ──────────────────────────────────────── */}
+      {/* ── Reports ──────────────────────────────────────────────── */}
       {draftReports.length > 0 && (
         <ReportStatusCard
           drafts={draftReports}
@@ -168,7 +165,7 @@ function StatPill({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left rounded-2xl bg-gradient-to-br ${gradient} p-4 shadow-violet-sm hover-lift hover-press text-white ${className ?? ""}`}
+      className={`w-full text-left rounded-2xl bg-gradient-to-br ${gradient} p-4 shadow-sm hover-lift hover-press text-white border border-white/10 ${className ?? ""}`}
     >
       <p className="text-3xl font-black animate-count-in">{value}</p>
       <p className="mt-1 text-xs font-semibold opacity-90">{label}</p>
