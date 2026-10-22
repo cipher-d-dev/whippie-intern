@@ -6,6 +6,18 @@ const nextConfig = {
   images: {
     remotePatterns: [],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/auth/verify-email",
+        destination: "/verify-email",
+      },
+      {
+        source: "/auth/reset-password",
+        destination: "/reset-password",
+      },
+    ];
+  },
 };
 
 const pwaConfig = withPWA({
