@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { use } from "react";
 import { EvaluationDetailScreen } from "../EvaluationsScreen";
 
 export const metadata: Metadata = {
@@ -8,7 +9,8 @@ export const metadata: Metadata = {
 export default function EvaluationDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  return <EvaluationDetailScreen id={params.id} />;
+  const { id } = use(params);
+  return <EvaluationDetailScreen id={id} />;
 }
