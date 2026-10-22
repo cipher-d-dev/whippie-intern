@@ -22,7 +22,7 @@ export async function apiGetTodayAttendance(): Promise<AttendanceRecord[]> {
     `/api/v1/attendance?date=${today}&limit=10`,
     { headers: authHeaders() }
   );
-  return res.data;
+  return Array.isArray(res?.data) ? res.data : [];
 }
 
 // ─── Tasks ────────────────────────────────────────────────────────────────────

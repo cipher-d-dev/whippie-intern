@@ -46,7 +46,7 @@ export default function RootLayout({
   checkEnv();
 
   return (
-    <html lang="en" suppressHydrationWarning className={plusJakartaSans.variable}>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth" className={plusJakartaSans.variable}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>

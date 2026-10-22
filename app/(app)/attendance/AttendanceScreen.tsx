@@ -269,7 +269,7 @@ function HistoryAccordion({ showHistory, setShowHistory, history, histPage, setH
           ) : (
             <>
               <ul className="divide-y divide-border/40">
-                {history.data.map((record: AttendanceRecord, i: number) => <HistoryRow key={record.id} record={record} index={i} />)}
+                {history.data.map((record: AttendanceRecord, i: number) => <HistoryRow key={record.id || (record as any)._id || `hist-${record.submittedAt}-${i}`} record={record} index={i} />)}
               </ul>
               {history.totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t border-border/40">

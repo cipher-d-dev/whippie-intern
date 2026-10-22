@@ -34,8 +34,8 @@ export function HomeDashboard() {
 
   const firstName   = user?.firstName ?? "there";
   const greeting    = getGreeting();
-  const checkIn     = todayAttendance?.find((a) => a.checkType === "CHECK_IN")  ?? null;
-  const checkOut    = todayAttendance?.find((a) => a.checkType === "CHECK_OUT") ?? null;
+  const checkIn     = (Array.isArray(todayAttendance) ? todayAttendance : [])?.find((a) => a.checkType === "CHECK_IN")  ?? null;
+  const checkOut    = (Array.isArray(todayAttendance) ? todayAttendance : [])?.find((a) => a.checkType === "CHECK_OUT") ?? null;
   const pendingTasks = activeTasks?.data.filter(
     (t) => t.status === "TODO" || t.status === "IN_PROGRESS" || t.status === "CHANGES_REQUESTED"
   ) ?? [];
