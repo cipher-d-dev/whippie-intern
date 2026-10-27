@@ -12,19 +12,26 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Whippe Intern",
-  description: "Whippe Intern PWA — your daily intern workspace",
+  title: "Whippie Intern",
+  description: "Whippie Intern PWA — your daily intern workspace",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.png", sizes: "64x64", type: "image/png" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/favicon.png",
+    apple: "/icons/icon-192x192.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Whippe Intern",
+    title: "Whippie Intern",
   },
   formatDetection: {
     telephone: false,
   },
 };
-
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#faf5ff" },

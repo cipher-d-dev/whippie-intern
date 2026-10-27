@@ -65,6 +65,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  avatarUrl?: string;
   role: Role;
   status: status;        // API field is "status" not "status"
   authMethod: AuthMethod;

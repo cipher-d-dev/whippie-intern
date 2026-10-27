@@ -145,6 +145,19 @@ export function LoginForm() {
             : <><span>Continue</span><ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" /></>
           }
         </Button>
+
+        {/* Alternative sign up link */}
+        <div className="pt-2 text-center border-t border-border/40">
+          <p className="text-xs text-muted-foreground">
+            Don&apos;t have an account yet?{" "}
+            <Link
+              href="/signup"
+              className="font-bold text-primary hover:underline underline-offset-4"
+            >
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     );
   }

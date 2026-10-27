@@ -6,13 +6,17 @@ import {
   User, Mail, Phone, MapPin, GraduationCap,
   BookOpen, Hash, Building2, LogOut, Edit2, Save, X, Loader2,
   ChevronRight, CalendarDays, KeyRound, Chrome, Link2Off, Plus,
-  Eye, EyeOff, Bell, BellOff,
+  Eye, EyeOff, Bell, BellOff, Camera,
 } from "lucide-react";
 import { useSession, useLogout, useLinkPassword, useUnlinkGoogle, useUnlinkPassword } from "@/features/auth/auth.hooks";
 import { useMyInternRecord } from "@/features/dashboard/dashboard.hooks";
 import { useInternSummary } from "@/features/dashboard/dashboard.hooks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiUpdateMyProfile, type UpdateProfilePayload } from "@/features/profile/profile.api";
+import { apiGetAvatarUploadInfo, apiUpdateAvatar } from "@/features/profile/profile.api";
+import { uploadToAppwrite } from "@/features/documents/documents.api";
+import { SESSION_QUERY_KEY } from "@/features/auth/auth.hooks";
+import Image from "next/image";
 import { INTERN_ME_KEY } from "@/features/dashboard/dashboard.hooks";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -41,6 +45,34 @@ export function ProfileScreen() {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<UpdateProfilePayload>({});
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file (PNG, JPG, WEBP).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Avatar file size must be under 5MB.');
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const info = await apiGetAvatarUploadInfo();
+      await uploadToAppwrite(info, file);
+      const avatarUrl = `${info.endpoint}/storage/buckets/${info.bucketId}/files/${info.fileId}/view?project=${info.projectId}`;
+      await apiUpdateAvatar(avatarUrl);
+      void qc.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+      toast.success('Profile picture updated');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to upload photo');
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = '';
+    }
+  };
 
   const startEditing = () => {
     setForm({

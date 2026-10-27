@@ -1,6 +1,6 @@
 {
-  "name": "Whippe Intern",
-  "short_name": "Whippe",
+  "name": "Whippie Intern",
+  "short_name": "Whippie",
   "description": "Your daily intern workspace — check in, manage tasks, submit reports.",
   "start_url": "/home",
   "scope": "/",

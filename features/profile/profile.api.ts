@@ -19,3 +19,27 @@ export async function apiUpdateMyProfile(internId: string, payload: UpdateProfil
   );
   return res.data.intern;
 }
+
+export interface UploadInfo {
+  endpoint: string;
+  projectId: string;
+  bucketId: string;
+  fileId: string;
+}
+
+export async function apiGetAvatarUploadInfo(): Promise<UploadInfo> {
+  const res = await api.get<ApiResponse<{ uploadInfo: UploadInfo }>>(
+    "/api/v1/users/me/avatar-upload-info",
+    { headers: authHeaders() }
+  );
+  return res.data.uploadInfo;
+}
+
+export async function apiUpdateAvatar(avatarUrl: string) {
+  const res = await api.patch<ApiResponse<{ user: unknown }>>(
+    "/api/v1/users/me/avatar",
+    { avatarUrl },
+    { headers: authHeaders() }
+  );
+  return res.data.user;
+}
