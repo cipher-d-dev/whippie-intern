@@ -50,3 +50,21 @@ export async function apiGetMyAttendance(params?: {
   );
   return res;
 }
+
+// ─── Geofence ─────────────────────────────────────────────────────────────────
+
+/** The office zone the server judges check-ins against (GET /attendance/geofence). */
+export interface Geofence {
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  poorAccuracyThresholdMeters: number;
+}
+
+export async function apiGetGeofence() {
+  const res = await api.get<ApiResponse<{ geofence: Geofence }>>(
+    "/api/v1/attendance/geofence",
+    { headers: authHeaders() }
+  );
+  return res.data.geofence;
+}

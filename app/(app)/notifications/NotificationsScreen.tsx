@@ -2,184 +2,112 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Bell, CheckCheck, CheckCircle2, ClipboardList,
-  Star, FileText, AlertCircle, Loader2,
-} from "lucide-react";
-import {
-  useNotifications, useMarkRead, useMarkAllRead,
-} from "@/features/notifications/notifications.hooks";
+import { AlertCircle, Bell, CheckCircle2, ClipboardList, FileText, FolderOpen, Loader2, Star, UserCheck } from "lucide-react";
+import { useNotifications, useMarkRead, useMarkAllRead } from "@/features/notifications/notifications.hooks";
 import type { Notification } from "@/features/notifications/notifications.api";
 import type { NotificationType } from "@/types";
-import { Badge } from "@/components/ui/badge";
+import { fmtTime, fmtWhen } from "@/lib/format";
+import { SubHeader } from "@/components/layout/ScreenHeader";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { cn } from "@/lib/utils";
 
-// ─── Icon + nav routing per notification type ─────────────────────────────────
+/** Icon, tone and where tapping goes, per notification type. */
+type Cfg = { icon: React.ElementType; tone?: "success" | "warning" | "danger"; route?: (id?: string) => string | null };
 
-const NOTIF_CONFIG: Partial<Record<NotificationType, {
-  icon: React.ElementType;
-  color: string;
-  bg: string;
-  route?: (id: string) => string;
-}>> = {
-  TASK_ASSIGNED:               { icon: ClipboardList, color: "text-primary",      bg: "bg-primary/10",                       route: (id) => `/tasks/${id}` },
-  TASK_FEEDBACK:               { icon: ClipboardList, color: "text-amber-500",    bg: "bg-amber-50 dark:bg-amber-900/20",    route: (id) => `/tasks/${id}` },
-  SUBMISSION_APPROVED:         { icon: CheckCircle2,  color: "text-emerald-500",  bg: "bg-emerald-50 dark:bg-emerald-900/20",route: (id) => `/tasks/${id}` },
-  SUBMISSION_CHANGES_REQUESTED:{ icon: AlertCircle,   color: "text-amber-500",    bg: "bg-amber-50 dark:bg-amber-900/20",    route: (id) => `/tasks/${id}` },
-  EVALUATION_SUBMITTED:        { icon: Star,          color: "text-violet-500",   bg: "bg-violet-50 dark:bg-violet-900/20" },
-  REPORT_REVIEWED:             { icon: FileText,      color: "text-blue-500",     bg: "bg-blue-50 dark:bg-blue-900/20",      route: (id) => `/reports/${id}` },
-  ACCOUNT_APPROVED:            { icon: CheckCircle2,  color: "text-emerald-500",  bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-  ACCOUNT_REJECTED:            { icon: AlertCircle,   color: "text-rose-500",     bg: "bg-rose-50 dark:bg-rose-900/20" },
-  SUPERVISOR_ASSIGNED:         { icon: CheckCircle2,  color: "text-blue-500",     bg: "bg-blue-50 dark:bg-blue-900/20" },
-  DOCUMENT_STATUS_CHANGED:     { icon: FileText,      color: "text-muted-foreground", bg: "bg-muted" },
+const CONFIG: Partial<Record<NotificationType, Cfg>> = {
+  TASK_ASSIGNED:                { icon: ClipboardList, route: (id) => (id ? `/tasks/${id}` : "/tasks") },
+  TASK_FEEDBACK:                { icon: ClipboardList, tone: "warning", route: (id) => (id ? `/tasks/${id}` : "/tasks") },
+  SUBMISSION_APPROVED:          { icon: CheckCircle2, tone: "success", route: (id) => (id ? `/tasks/${id}` : "/tasks") },
+  SUBMISSION_CHANGES_REQUESTED: { icon: AlertCircle, tone: "warning", route: (id) => (id ? `/tasks/${id}` : "/tasks") },
+  EVALUATION_SUBMITTED:         { icon: Star, route: (id) => (id ? `/evaluations/${id}` : "/evaluations") },
+  REPORT_REVIEWED:              { icon: FileText, tone: "success", route: (id) => (id ? `/reports/${id}` : "/reports") },
+  ACCOUNT_APPROVED:             { icon: CheckCircle2, tone: "success" },
+  ACCOUNT_REJECTED:             { icon: AlertCircle, tone: "danger" },
+  SUPERVISOR_ASSIGNED:          { icon: UserCheck, route: () => "/profile" },
+  DOCUMENT_STATUS_CHANGED:      { icon: FolderOpen, route: () => "/timeline" },
 };
 
-function timeAgo(dateStr: string): string {
-  const diff  = Date.now() - new Date(dateStr).getTime();
-  const mins  = Math.floor(diff / 60_000);
-  const hours = Math.floor(diff / 3_600_000);
-  const days  = Math.floor(diff / 86_400_000);
-  if (mins  < 1)  return "just now";
-  if (mins  < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days  < 7)  return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
+const TONE = {
+  success: "bg-success-soft text-success-foreground",
+  warning: "bg-warning-soft text-warning-foreground",
+  danger:  "bg-danger-soft text-danger-foreground",
+};
 
 export function NotificationsScreen() {
-  const router      = useRouter();
+  const router = useRouter();
   const [page, setPage] = useState(1);
-  const [filter, setFilter] = useState<"all" | "unread">("all");
-
-  const { data, isLoading } = useNotifications(page, filter === "unread" ? false : undefined);
-  const markRead    = useMarkRead();
+  const { data, isLoading, isError, refetch } = useNotifications(page);
+  const markRead = useMarkRead();
   const markAllRead = useMarkAllRead();
 
   const notifications = data?.data ?? [];
-  const unreadCount   = notifications.filter((n) => !n.read).length;
+  const unread = notifications.filter((n) => !n.read).length;
 
-  const handleTap = (n: Notification) => {
-    const notifId = n.id || n._id;
-    if (!n.read && notifId) {
-      markRead.mutate(notifId);
-    }
-    const route = NOTIF_CONFIG[n.type]?.route;
-    if (route && n.relatedEntity?.id) {
-      router.push(route(n.relatedEntity.id));
-    }
+  const open = (n: Notification) => {
+    const id = n.id || n._id;
+    if (!n.read && id) markRead.mutate(id);
+    const to = CONFIG[n.type]?.route?.(n.relatedEntity?.id);
+    if (to) router.push(to);
   };
 
-  return (
-    <div className="flex flex-col min-h-full pb-8">
-      {/* Header */}
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border/50 bg-background/90 px-4 py-3.5 backdrop-blur-xl">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Notifications</h1>
-          {unreadCount > 0 && (
-            <Badge variant="secondary" className="h-5 px-1.5 text-[11px] font-semibold bg-primary/10 text-primary">
-              {unreadCount} new
-            </Badge>
-          )}
-        </div>
+  const today = new Date().toDateString();
+  const groups = [
+    { label: "Today", items: notifications.filter((n) => new Date(n.createdAt).toDateString() === today) },
+    { label: "Earlier", items: notifications.filter((n) => new Date(n.createdAt).toDateString() !== today) },
+  ].filter((g) => g.items.length);
 
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={markAllRead.isPending}
+  return (
+    <div className="animate-fade-in">
+      <SubHeader
+        title="Notifications"
+        backHref="/home"
+        action={
+          unread > 0 ? (
+            <button
               onClick={() => markAllRead.mutate()}
-              className="h-8 gap-1.5 text-xs font-semibold text-primary hover:bg-primary/10"
+              disabled={markAllRead.isPending}
+              className="whitespace-nowrap text-[13px] font-medium text-primary hover:underline disabled:opacity-50"
             >
-              {markAllRead.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <CheckCheck className="h-3.5 w-3.5" />
-              )}
-              Mark all read
-            </Button>
-          )}
-        </div>
-      </div>
+              {markAllRead.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark all read"}
+            </button>
+          ) : undefined
+        }
+      />
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 px-4 py-3 border-b border-border/40">
-        <button
-          onClick={() => { setFilter("all"); setPage(1); }}
-          className={cn(
-            "rounded-full px-3.5 py-1 text-xs font-medium transition-colors",
-            filter === "all"
-              ? "bg-primary text-primary-foreground font-semibold"
-              : "bg-muted text-muted-foreground hover:text-foreground",
-          )}
-        >
-          All
-        </button>
-        <button
-          onClick={() => { setFilter("unread"); setPage(1); }}
-          className={cn(
-            "rounded-full px-3.5 py-1 text-xs font-medium transition-colors",
-            filter === "unread"
-              ? "bg-primary text-primary-foreground font-semibold"
-              : "bg-muted text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Unread only
-        </button>
-      </div>
-
-      {/* List */}
-      <div>
+      <div className="space-y-4 px-5 pb-6 pt-1">
         {isLoading ? (
-          <div className="px-4 pt-4 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-2xl" />
-            ))}
-          </div>
+          <Skeleton className="h-72 rounded-2xl" />
+        ) : isError ? (
+          <Card className="p-6 text-center">
+            <p className="font-medium">Couldn&apos;t load notifications</p>
+            <button onClick={() => refetch()} className="mt-2 text-sm font-medium text-primary hover:underline">Try again</button>
+          </Card>
         ) : notifications.length === 0 ? (
-          <EmptyState filter={filter} />
+          <Card className="px-6 py-12 text-center">
+            <Bell className="mx-auto h-6 w-6 text-muted-foreground" />
+            <p className="mt-3 font-medium">You&apos;re all caught up</p>
+            <p className="mt-1 text-sm text-muted-foreground">New tasks, feedback and updates from HR will show up here.</p>
+          </Card>
         ) : (
-          <ul className="divide-y divide-border/40">
-            {notifications.map((n, i) => {
-              const uniqueKey = n.id || n._id || `notif-${n.createdAt}-${i}`;
-              return (
-                <NotifRow
-                  key={uniqueKey}
-                  notification={n}
-                  index={i}
-                  onTap={() => handleTap(n)}
-                />
-              );
-            })}
-          </ul>
+          groups.map((g) => (
+            <section key={g.label} aria-label={g.label}>
+              <h2 className="px-1 pb-2 text-[13px] font-medium text-muted-foreground">{g.label}</h2>
+              <Card className="overflow-hidden">
+                <ul className="divide-y">
+                  {g.items.map((n, i) => <Row key={n.id || n._id || `${n.createdAt}-${i}`} n={n} today={g.label === "Today"} onOpen={() => open(n)} />)}
+                </ul>
+              </Card>
+            </section>
+          ))
         )}
 
-        {/* Pagination */}
         {data && data.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-4 border-t border-border/40">
-            <button
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="text-xs font-medium text-primary disabled:opacity-40"
-            >
-              ← Previous
-            </button>
-            <span className="text-xs text-muted-foreground">
-              {page} / {data.totalPages}
-            </span>
-            <button
-              disabled={page >= data.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="text-xs font-medium text-primary disabled:opacity-40"
-            >
-              Next →
-            </button>
+          <div className="flex items-center justify-between text-[13px] text-muted-foreground">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Newer</Button>
+            <span className="font-mono">{page} / {data.totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)}>Older</Button>
           </div>
         )}
       </div>
@@ -187,69 +115,24 @@ export function NotificationsScreen() {
   );
 }
 
-// ─── Notification row ─────────────────────────────────────────────────────────
-
-function NotifRow({ notification: n, index, onTap }: {
-  notification: Notification;
-  index: number;
-  onTap: () => void;
-}) {
-  const cfg  = NOTIF_CONFIG[n.type] ?? { icon: Bell, color: "text-muted-foreground", bg: "bg-muted" };
+function Row({ n, today, onOpen }: { n: Notification; today: boolean; onOpen: () => void }) {
+  const cfg: Cfg = CONFIG[n.type] ?? { icon: Bell };
   const Icon = cfg.icon;
-  const tappable = !!NOTIF_CONFIG[n.type]?.route;
-
   return (
-    <li
-      role={tappable ? "button" : undefined}
-      onClick={tappable ? onTap : undefined}
-      className={cn(
-        "flex items-start gap-3 px-4 py-3.5 transition-colors animate-fade-up",
-        !n.read && "bg-primary/[0.03] dark:bg-primary/[0.06]",
-        tappable && "cursor-pointer hover:bg-muted/40 active:bg-muted/60",
-      )}
-      style={{ animationDelay: `${index * 40}ms` }}
-    >
-      {/* Icon */}
-      <span className={cn("mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl", cfg.bg)}>
-        <Icon className={cn("h-4 w-4", cfg.color)} />
-      </span>
-
-      {/* Content */}
-      <div className="min-w-0 flex-1 space-y-0.5">
-        <p className={cn(
-          "text-sm leading-snug",
-          n.read ? "text-muted-foreground" : "font-semibold text-foreground",
-        )}>
-          {n.title}
-        </p>
-        <p className="text-xs text-muted-foreground leading-snug line-clamp-2">{n.body}</p>
-        <p className="text-[10px] text-muted-foreground/70">{timeAgo(n.createdAt)}</p>
-      </div>
-
-      {/* Unread dot */}
-      {!n.read && (
-        <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-primary animate-pulse-dot" />
-      )}
+    <li>
+      <button type="button" onClick={onOpen} className="flex w-full items-start gap-3 px-[18px] py-3.5 text-left hover:bg-muted/50">
+        <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", cfg.tone ? TONE[cfg.tone] : "bg-muted text-muted-foreground")}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline justify-between gap-2">
+            <span className={cn("text-sm", !n.read && "font-semibold")}>{n.title}</span>
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">{today ? fmtTime(n.createdAt) : fmtWhen(n.createdAt)}</span>
+          </span>
+          <span className="mt-0.5 line-clamp-2 block text-[13px] leading-snug text-muted-foreground">{n.body}</span>
+        </span>
+        {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary"><span className="sr-only">Unread</span></span>}
+      </button>
     </li>
-  );
-}
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
-function EmptyState({ filter }: { filter: "all" | "unread" }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-up px-4">
-      <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted animate-float">
-        <Bell className="h-7 w-7 text-muted-foreground" />
-      </span>
-      <p className="text-sm font-medium text-foreground">
-        {filter === "unread" ? "No unread notifications" : "No notifications yet"}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {filter === "unread"
-          ? "You're all caught up!"
-          : "Notifications about tasks, evaluations, and updates will appear here."}
-      </p>
-    </div>
   );
 }

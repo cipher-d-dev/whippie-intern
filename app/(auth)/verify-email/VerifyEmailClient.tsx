@@ -42,11 +42,11 @@ export function VerifyEmailClient() {
   if (state === "verifying") {
     return (
       <div className="flex flex-col items-center gap-5 py-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-900/20">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent">
           <Loader2 className="h-8 w-8 text-primary animate-spin" />
         </div>
         <div className="space-y-1">
-          <p className="text-[17px] font-extrabold tracking-tight text-foreground">Verifying…</p>
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">Verifying…</h1>
           <p className="text-sm text-muted-foreground">Confirming your email address.</p>
         </div>
       </div>
@@ -57,11 +57,11 @@ export function VerifyEmailClient() {
   if (state === "success") {
     return (
       <div className="flex flex-col items-center gap-5 py-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-900/20">
-          <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-success-soft">
+          <CheckCircle2 className="h-8 w-8 text-success-foreground" />
         </div>
         <div className="space-y-1">
-          <p className="text-[17px] font-extrabold tracking-tight text-foreground">Email verified!</p>
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">Email confirmed</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Your email is confirmed. HR will review your account shortly and you'll be notified by email.
           </p>
@@ -74,18 +74,18 @@ export function VerifyEmailClient() {
   if (state === "error") {
     return (
       <div className="flex flex-col items-center gap-5 py-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-900/20">
-          <XCircle className="h-8 w-8 text-rose-500" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-danger-soft">
+          <XCircle className="h-8 w-8 text-danger-foreground" />
         </div>
         <div className="space-y-1">
-          <p className="text-[17px] font-extrabold tracking-tight text-foreground">Link invalid</p>
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">Link invalid</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {errorMsg || "This verification link is invalid or has expired."}
           </p>
         </div>
         {user?.email && (
           <Button
-            className="w-full h-11 rounded-2xl font-bold"
+            className="w-full"
             onClick={() => resend.mutate(user.email)}
             disabled={resend.isPending}
           >
@@ -103,11 +103,11 @@ export function VerifyEmailClient() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col items-center gap-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-900/20 animate-float">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent">
           <Mail className="h-8 w-8 text-primary" />
         </div>
         <div className="space-y-1">
-          <p className="text-[17px] font-extrabold tracking-tight text-foreground">Check your email</p>
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">Check your email</h1>
           {user && (
             <p className="text-sm font-semibold text-foreground/80">Hi {user.firstName},</p>
           )}
@@ -125,8 +125,8 @@ export function VerifyEmailClient() {
       <div className="space-y-2.5">
         {["Open the email from Whippie.", 'Click "Verify my email".', "HR will then review your account."].map((step, i) => (
           <div key={i} className="flex items-center gap-3">
-            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-[11px] font-bold text-primary">{i + 1}</span>
+            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-accent">
+              <span className="font-mono text-[11px] text-accent-foreground">{i + 1}</span>
             </div>
             <p className="text-sm text-muted-foreground">{step}</p>
           </div>
@@ -138,14 +138,14 @@ export function VerifyEmailClient() {
         {user?.email && (
           <Button
             variant="outline"
-            className="w-full h-11 rounded-2xl gap-2"
+            className="w-full"
             onClick={() => resend.mutate(user.email)}
             disabled={resend.isPending || resend.isSuccess}
           >
             {resend.isPending
               ? <Loader2 className="h-4 w-4 animate-spin" />
               : resend.isSuccess
-                ? <><CheckCircle2 className="h-4 w-4 text-emerald-500" />Email sent!</>
+                ? <><CheckCircle2 className="h-4 w-4 text-success-foreground" />Email sent</>
                 : <><RefreshCw className="h-4 w-4" />Resend email</>
             }
           </Button>
@@ -153,7 +153,7 @@ export function VerifyEmailClient() {
 
         <Button
           variant="ghost"
-          className="w-full h-11 rounded-2xl gap-2 text-muted-foreground text-[13px]"
+          className="w-full text-muted-foreground"
           onClick={() => logout.mutate()}
           disabled={logout.isPending}
         >

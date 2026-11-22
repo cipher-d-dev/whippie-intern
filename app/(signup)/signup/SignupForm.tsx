@@ -13,6 +13,7 @@ import { apiSignup } from "@/features/auth/auth.api";
 import { ApiError } from "@/lib/api/client";
 import { SESSION_QUERY_KEY } from "@/features/auth/auth.hooks";
 import { cn } from "@/lib/utils";
+import { fieldClass } from "@/lib/ui";
 
 const schema = z.object({
   firstName:       z.string().min(1, "Required"),
@@ -24,13 +25,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const inputCls = (err: boolean) => cn(
-  "w-full rounded-2xl border bg-muted/40 px-4 py-3 text-sm font-medium outline-none",
-  "placeholder:text-muted-foreground/40 transition-all duration-150",
-  err
-    ? "border-destructive/50 bg-destructive/5"
-    : "border-transparent hover:border-border focus:border-primary/60 focus:bg-background focus:ring-2 focus:ring-primary/15",
-);
+const inputCls = fieldClass;
 
 export function SignupForm() {
   const router = useRouter();
@@ -57,73 +52,67 @@ export function SignupForm() {
   const onSubmit = handleSubmit((v) => signup.mutate(v));
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(e as any); }} className="space-y-3" noValidate>
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(e as any); }} className="space-y-4" noValidate>
 
       {/* Name row */}
       <div className="grid grid-cols-2 gap-2.5">
         <div className="space-y-1">
-          <label htmlFor="firstName" className="block text-[13px] font-semibold text-foreground">First name</label>
-          <input id="firstName" type="text" autoComplete="given-name" placeholder="Ada"
+          <label htmlFor="firstName" className="block text-[13px] font-medium text-foreground">First name</label>
+          <input id="firstName" type="text" autoComplete="given-name" placeholder="Tolani"
             {...register("firstName")} className={inputCls(!!errors.firstName)} />
-          {errors.firstName && <p className="text-[11px] text-destructive">{errors.firstName.message}</p>}
+          {errors.firstName && <p className="text-[13px] text-danger-foreground">{errors.firstName.message}</p>}
         </div>
         <div className="space-y-1">
-          <label htmlFor="lastName" className="block text-[13px] font-semibold text-foreground">Last name</label>
-          <input id="lastName" type="text" autoComplete="family-name" placeholder="Okafor"
+          <label htmlFor="lastName" className="block text-[13px] font-medium text-foreground">Last name</label>
+          <input id="lastName" type="text" autoComplete="family-name" placeholder="Abubakar"
             {...register("lastName")} className={inputCls(!!errors.lastName)} />
-          {errors.lastName && <p className="text-[11px] text-destructive">{errors.lastName.message}</p>}
+          {errors.lastName && <p className="text-[13px] text-danger-foreground">{errors.lastName.message}</p>}
         </div>
       </div>
 
       {/* Email */}
       <div className="space-y-1">
-        <label htmlFor="email" className="block text-[13px] font-semibold text-foreground">Email</label>
+        <label htmlFor="email" className="block text-[13px] font-medium text-foreground">Email</label>
         <div className="relative">
-          <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" aria-hidden />
           <input id="email" type="email" autoComplete="email" placeholder="you@example.com"
-            {...register("email")} className={cn(inputCls(!!errors.email), "pl-10")} />
+            {...register("email")} className={inputCls(!!errors.email)} />
         </div>
-        {errors.email && <p className="text-[11px] text-destructive">{errors.email.message}</p>}
+        {errors.email && <p className="text-[13px] text-danger-foreground">{errors.email.message}</p>}
       </div>
 
       {/* Password */}
       <div className="space-y-1">
-        <label htmlFor="password" className="block text-[13px] font-semibold text-foreground">Password</label>
+        <label htmlFor="password" className="block text-[13px] font-medium text-foreground">Password</label>
         <div className="relative">
-          <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" aria-hidden />
-          <input id="password" type={showPw ? "text" : "password"} autoComplete="new-password" placeholder="Min 8 characters"
-            {...register("password")} className={cn(inputCls(!!errors.password), "pl-10 pr-11")} />
-          <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" aria-label="Toggle">
+          <input id="password" type={showPw ? "text" : "password"} autoComplete="new-password" placeholder="At least 8 characters"
+            {...register("password")} className={cn(inputCls(!!errors.password), "pr-11")} />
+          <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label={showPw ? "Hide password" : "Show password"}>
             {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        {errors.password && <p className="text-[11px] text-destructive">{errors.password.message}</p>}
+        {errors.password && <p className="text-[13px] text-danger-foreground">{errors.password.message}</p>}
       </div>
 
       {/* Confirm */}
       <div className="space-y-1">
-        <label htmlFor="confirmPassword" className="block text-[13px] font-semibold text-foreground">Confirm password</label>
+        <label htmlFor="confirmPassword" className="block text-[13px] font-medium text-foreground">Confirm password</label>
         <div className="relative">
-          <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" aria-hidden />
           <input id="confirmPassword" type={showCf ? "text" : "password"} autoComplete="new-password" placeholder="Repeat password"
-            {...register("confirmPassword")} className={cn(inputCls(!!errors.confirmPassword), "pl-10 pr-11")} />
-          <button type="button" onClick={() => setShowCf(v => !v)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" aria-label="Toggle">
+            {...register("confirmPassword")} className={cn(inputCls(!!errors.confirmPassword), "pr-11")} />
+          <button type="button" onClick={() => setShowCf(v => !v)} className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label={showCf ? "Hide password" : "Show password"}>
             {showCf ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        {errors.confirmPassword && <p className="text-[11px] text-destructive">{errors.confirmPassword.message}</p>}
+        {errors.confirmPassword && <p className="text-[13px] text-danger-foreground">{errors.confirmPassword.message}</p>}
       </div>
 
-      <Button type="submit" className="group w-full h-12 rounded-2xl text-[15px] font-bold shadow-violet-md mt-1" disabled={busy}>
+      <Button type="submit" size="lg" className="group mt-2 w-full" disabled={busy}>
         {busy
           ? <Loader2 className="h-5 w-5 animate-spin" />
           : <><span>Create account</span><ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" /></>
         }
       </Button>
 
-      <p className="text-center text-[11px] text-muted-foreground leading-relaxed pt-1">
-        For screened DAAR Communications interns and NYSC IT personnel only.
-      </p>
     </form>
   );
 }

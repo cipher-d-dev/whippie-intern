@@ -1,89 +1,63 @@
 "use client";
 
-import { Clock, Mail, LogOut, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useSession, useLogout } from "@/features/auth/auth.hooks";
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Check, Clock, LogOut, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { StatusScreen } from "@/components/shared/StatusScreen";
+import { useSession, useLogout } from "@/features/auth/auth.hooks";
+import { cn } from "@/lib/utils";
 
 export function VerificationPendingClient() {
-  const { data: user, isLoading, refetch } = useSession();
+  const { data: user, isFetching, refetch } = useSession();
   const logout = useLogout();
   const router = useRouter();
 
   useEffect(() => {
-    if (user?.status === "ACTIVE")            router.replace("/home");
-    else if (user?.status === "REJECTED")     router.replace("/account-rejected");
+    if (user?.status === "ACTIVE") router.replace("/home");
+    else if (user?.status === "REJECTED") router.replace("/account-rejected");
     else if (user?.status === "UNVERIFIED_EMAIL") router.replace("/verify-email");
   }, [user?.status, router]);
 
+  const steps = [
+    { label: "Account created", done: true },
+    { label: "Email confirmed", done: true },
+    { label: "HR checks you're on the programme", done: false },
+  ];
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-5 py-12 bg-background">
-      {/* Ambient blobs */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-400/10 blur-3xl" />
-        <div className="absolute bottom-10 right-0 h-64 w-64 rounded-full bg-violet-400/10 blur-3xl" />
-      </div>
-
-      {/* Icon */}
-      <div className="mb-6 animate-float">
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-50 dark:bg-amber-900/20 shadow-card border border-amber-200/50 dark:border-amber-700/30">
-          <Clock className="h-10 w-10 text-amber-500" />
-        </div>
-      </div>
-
-      <div className="w-full max-w-sm text-center space-y-3 animate-fade-up">
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-          Awaiting HR approval
-        </h1>
-        {user && (
-          <p className="text-base font-medium text-foreground/80">
-            Hi {user.firstName}, your email is verified ✓
-          </p>
-        )}
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          HR needs to review and approve your account before you can sign in.
-          This usually happens within one business day.
-        </p>
-      </div>
-
-      {/* Steps card */}
-      <div className="mt-8 w-full max-w-sm rounded-2xl border border-border/60 bg-card p-5 shadow-card space-y-3 animate-fade-up delay-100">
-        {[
-          { icon: Mail,      text: "You'll receive an email once HR reviews your account." },
-          { icon: Clock,     text: "Accounts pending review expire after 30 days." },
-          { icon: RefreshCw, text: 'Tap "Check status" below if you\'ve already been approved.' },
-        ].map(({ icon: Icon, text }, i) => (
-          <div key={i} className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
-              <Icon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground leading-snug">{text}</p>
-          </div>
+    <StatusScreen
+      tone="warning"
+      icon={<Clock />}
+      title="Waiting for HR"
+      actions={
+        <>
+          <Button size="lg" variant="outline" className="w-full" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={cn(isFetching && "animate-spin")} /> Check again
+          </Button>
+          <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => logout.mutate()} disabled={logout.isPending}>
+            <LogOut /> Sign out
+          </Button>
+        </>
+      }
+    >
+      <p>
+        {user ? `Thanks, ${user.firstName}. ` : ""}HR will confirm you&apos;re on the programme before you can use the app.
+        You&apos;ll get an email when that&apos;s done, usually within a working day.
+      </p>
+      <ol className="rounded-2xl bg-card px-4 py-1.5 dark:border">
+        {steps.map((s) => (
+          <li key={s.label} className="flex items-center gap-3 border-t py-3 text-sm first:border-t-0">
+            <span className={cn(
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+              s.done ? "bg-success-soft text-success-foreground" : "bg-warning-soft text-warning-foreground",
+            )}>
+              {s.done ? <Check className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+            </span>
+            <span className={s.done ? "text-muted-foreground" : "font-medium text-foreground"}>{s.label}</span>
+          </li>
         ))}
-      </div>
-
-      {/* Actions */}
-      <div className="mt-6 w-full max-w-sm space-y-3 animate-fade-up delay-200">
-        <Button
-          variant="outline"
-          className="w-full gap-2"
-          onClick={() => refetch()}
-          disabled={isLoading}
-        >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          Check status
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full gap-2 text-muted-foreground"
-          onClick={() => logout.mutate()}
-          disabled={logout.isPending}
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </Button>
-      </div>
-    </div>
+      </ol>
+    </StatusScreen>
   );
 }

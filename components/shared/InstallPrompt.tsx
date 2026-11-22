@@ -74,9 +74,9 @@ export function InstallPrompt() {
     <div
       role="dialog"
       aria-label="Install Whippie"
-      className="fixed bottom-20 left-4 right-4 z-50 animate-fade-up"
+      className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md animate-fade-up"
     >
-      <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-[0_8px_32px_hsl(262_83%_58%/0.15)] dark:shadow-[0_8px_32px_hsl(262_83%_65%/0.2)]">
+      <div className="flex items-center gap-3 rounded-2xl border bg-card px-4 py-3 shadow-lg">
         {/* Logo */}
         <div className="flex-shrink-0">
           <WhippieLogo size={36} />
@@ -84,9 +84,9 @@ export function InstallPrompt() {
 
         {/* Text */}
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-foreground leading-tight">Install Whippie</p>
-          <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-            Add to your home screen for the best experience
+          <p className="text-sm font-semibold leading-tight">Install Whippie</p>
+          <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
+            Add it to your home screen to check in faster
           </p>
         </div>
 
@@ -94,14 +94,14 @@ export function InstallPrompt() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={handleInstall}
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-[12px] font-bold text-white active:scale-95 transition-transform"
+            className="press flex h-10 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground"
           >
             <Download className="h-3.5 w-3.5" />
             Install
           </button>
           <button
             onClick={handleDismiss}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
             aria-label="Dismiss"
           >
             <X className="h-4 w-4" />

@@ -3,12 +3,18 @@ import { authHeaders } from "@/features/auth/auth.api";
 import type { ApiResponse } from "@/types";
 import type { InternRecord } from "@/features/interns/interns.api";
 
+/** The details interns and corps members fill in themselves (the API allows exactly these). */
 export interface UpdateProfilePayload {
+  middleName?: string;
+  gender?: "MALE" | "FEMALE";
   phone?: string;
   address?: string;
   institution?: string;
+  institutionLocation?: string;
   course?: string;
   level?: string;
+  stateCode?: string;
+  callUpNumber?: string;
 }
 
 export async function apiUpdateMyProfile(internId: string, payload: UpdateProfilePayload) {

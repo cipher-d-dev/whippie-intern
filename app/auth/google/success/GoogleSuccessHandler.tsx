@@ -80,8 +80,8 @@ export function GoogleSuccessHandler() {
   if (error) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-5 bg-background">
-        <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-50 dark:bg-rose-900/20">
-          <XCircle className="h-8 w-8 text-rose-500" />
+        <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-danger-soft">
+          <XCircle className="h-8 w-8 text-danger-foreground" />
         </div>
         <div className="text-center space-y-1">
           <p className="text-base font-bold text-foreground">Sign-in failed</p>

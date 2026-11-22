@@ -1,14 +1,17 @@
 {
   "name": "Whippie Intern",
   "short_name": "Whippie",
-  "description": "Your daily intern workspace — check in, manage tasks, submit reports.",
+  "description": "Your daily intern workspace \u2014 check in, manage tasks, submit reports.",
   "start_url": "/home",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#faf5ff",
-  "theme_color": "#7c3aed",
-  "categories": ["productivity", "utilities"],
+  "background_color": "#F4F5F7",
+  "theme_color": "#1660FF",
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -40,13 +43,23 @@
       "name": "Check in",
       "short_name": "Check in",
       "url": "/attendance",
-      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "My tasks",
       "short_name": "Tasks",
       "url": "/tasks",
-      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
