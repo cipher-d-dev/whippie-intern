@@ -24,6 +24,7 @@ import { PersonAvatar } from "@/components/shared/PersonAvatar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { fmtDate } from "@/lib/format";
+import { useTypeLabel } from "@/features/settings/settings";
 import { subscribeToPush, unsubscribeFromPush, getPushPermissionState } from "@/lib/push";
 
 export function ProfileScreen() {
@@ -31,6 +32,7 @@ export function ProfileScreen() {
   const { data: user,   isLoading: userLoading  } = useSession();
   const { data: intern, isLoading: internLoading } = useMyInternRecord();
   const { data: summary } = useInternSummary(intern?.id);
+  const typeLabel = useTypeLabel();
 
   const qc = useQueryClient();
   const updateProfile = useMutation({
@@ -100,7 +102,7 @@ export function ProfileScreen() {
   const fullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
   const dept = intern?.department;
   const roleLine = [
-    intern?.internshipType === "NYSC_IT" ? "Corps member" : "Intern",
+    typeLabel(intern?.internshipType),
     dept ? [dept.name, dept.subsidiary].filter(Boolean).join(", ") : null,
   ].filter(Boolean).join(" · ");
   const avg = summary?.evaluations.averageScores?.overall;

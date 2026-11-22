@@ -27,7 +27,7 @@ export default function SignupPage() {
         <main className="px-5 pb-10 sm:px-0">
           <h1 className="pt-4 text-[28px] font-semibold leading-tight tracking-[-0.03em]">Create your account</h1>
           <p className="mt-1.5 text-[15px] text-muted-foreground">
-            For DAAR Communications interns and NYSC corps members.
+            For students on industrial training (SIWES / IT) and NYSC corps members at DAAR Communications.
           </p>
 
           <ol className="mt-5 flex flex-col gap-2 rounded-2xl bg-card px-4 py-3.5 text-sm dark:border">
