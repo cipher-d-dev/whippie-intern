@@ -36,13 +36,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
         {/* Toast — bottom of screen, mobile-friendly */}
         <Toaster
-          position="bottom-center"
+          position="top-center"
           expand={false}
-          richColors
           toastOptions={{
             classNames: {
               toast:
-                "font-sans rounded-2xl shadow-violet-md border border-border text-sm",
+                "font-sans rounded-xl border border-border text-sm shadow-lg",
               title: "font-semibold",
               description: "text-muted-foreground",
             },

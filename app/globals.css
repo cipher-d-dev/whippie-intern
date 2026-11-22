@@ -2,105 +2,109 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Plus Jakarta Sans is loaded via next/font/google in app/layout.tsx */
+/* ─── "Calm Signal" design tokens ──────────────────────────────────────────────
+   Shared with the HR dashboard (whippie-web). One accent, Whippie blue, on quiet
+   neutrals. Status colours (success / warning / danger / info) are only used for
+   status, always next to a word. In the phone app the page is the grey canvas
+   and content sits on white cards. Geist + Geist Mono load in app/layout.tsx. */
 
-/* ─── Design tokens ──────────────────────────────────────────────────────────*/
 @layer base {
   :root {
-    --background:  270 40% 98%;
-    --foreground:  260 25% 11%;
-
-    --card:        0 0% 100%;
-    --card-foreground: 260 25% 11%;
-
-    --popover:     0 0% 100%;
-    --popover-foreground: 260 25% 11%;
-
-    --primary:     262 83% 58%;
+    --canvas:           220 16% 96%;   /* #F4F5F7 */
+    --background:       220 16% 96%;
+    --foreground:       224 42% 9%;    /* #0D1220 ink */
+    --card:             0 0% 100%;
+    --card-foreground:  224 42% 9%;
+    --popover:          0 0% 100%;
+    --popover-foreground: 224 42% 9%;
+    --primary:          221 100% 54%;  /* #1660FF Whippie blue */
+    --primary-hover:    221 87% 46%;   /* #0F4FDB */
     --primary-foreground: 0 0% 100%;
-
-    --secondary:   262 30% 93%;
-    --secondary-foreground: 262 40% 25%;
-
-    --muted:       262 20% 95%;
-    --muted-foreground: 262 12% 50%;
-
-    --accent:      262 60% 94%;
-    --accent-foreground: 262 83% 42%;
-
-    --destructive: 0 84% 60%;
+    --secondary:        225 17% 95%;
+    --secondary-foreground: 223 17% 28%;
+    --muted:            225 17% 95%;   /* #F1F2F5 */
+    --muted-foreground: 222 13% 42%;   /* #5E6679 */
+    --accent:           222 100% 97%;  /* #EEF3FF */
+    --accent-foreground: 221 87% 46%;
+    --destructive:      4 74% 49%;
     --destructive-foreground: 0 0% 100%;
+    --border:           223 17% 92%;   /* #E7E9EE */
+    --input:            218 17% 87%;   /* #D9DDE4 */
+    --ring:             221 100% 54%;
+    --radius:           0.75rem;
 
-    --border:      262 18% 88%;
-    --input:       262 18% 88%;
-    --ring:        262 83% 58%;
-
-    --radius: 1rem;
-
-    /* Coloured card tints — light */
-    --card-violet-bg: 262 70% 95%; --card-violet-fg: 262 83% 38%;
-    --card-emerald-bg: 152 55% 93%; --card-emerald-fg: 152 60% 22%;
-    --card-amber-bg: 38 80% 93%;   --card-amber-fg: 38 80% 25%;
-    --card-blue-bg: 213 65% 93%;   --card-blue-fg: 213 70% 25%;
-    --card-rose-bg: 350 65% 93%;   --card-rose-fg: 350 65% 28%;
-    --card-orange-bg: 25 75% 93%;  --card-orange-fg: 25 75% 26%;
+    --success:          148 74% 36%;
+    --success-soft:     143 45% 94%;
+    --success-foreground: 148 73% 24%;
+    --warning:          38 92% 50%;
+    --warning-soft:     41 100% 94%;
+    --warning-foreground: 36 100% 27%;
+    --danger:           358 75% 59%;
+    --danger-soft:      4 81% 96%;
+    --danger-foreground: 3 71% 41%;
+    --info:             221 100% 54%;
+    --info-soft:        222 100% 97%;
+    --info-foreground:  221 87% 46%;
   }
 
   .dark {
-    --background:  262 28% 7%;
-    --foreground:  260 15% 93%;
+    --canvas:           225 36% 4%;
+    --background:       225 36% 4%;
+    --foreground:       225 21% 93%;
+    --card:             223 33% 8%;
+    --card-foreground:  225 21% 93%;
+    --popover:          223 30% 10%;
+    --popover-foreground: 225 21% 93%;
+    /* White text on any blue dark enough for a dark UI fails contrast,
+       so dark mode uses a lighter blue with dark text. */
+    --primary:          222 100% 75%;  /* #7FA6FF */
+    --primary-hover:    222 100% 82%;
+    --primary-foreground: 224 42% 7%;
+    --secondary:        223 28% 13%;
+    --secondary-foreground: 225 21% 93%;
+    --muted:            223 28% 13%;
+    --muted-foreground: 221 16% 65%;
+    --accent:           223 52% 17%;
+    --accent-foreground: 222 100% 75%;
+    --destructive:      358 100% 74%;
+    --destructive-foreground: 224 42% 7%;
+    --border:           226 23% 16%;
+    --input:            224 21% 22%;
+    --ring:             222 100% 75%;
 
-    --card:        262 28% 10%;
-    --card-foreground: 260 15% 93%;
-
-    --popover:     262 28% 10%;
-    --popover-foreground: 260 15% 93%;
-
-    --primary:     262 83% 65%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary:   262 22% 17%;
-    --secondary-foreground: 262 15% 85%;
-
-    --muted:       262 22% 14%;
-    --muted-foreground: 262 12% 55%;
-
-    --accent:      262 38% 20%;
-    --accent-foreground: 262 83% 75%;
-
-    --destructive: 0 55% 42%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border:      262 18% 18%;
-    --input:       262 18% 18%;
-    --ring:        262 83% 65%;
-
-    --card-violet-bg: 262 42% 17%; --card-violet-fg: 262 83% 76%;
-    --card-emerald-bg: 152 38% 13%; --card-emerald-fg: 152 55% 62%;
-    --card-amber-bg: 38 48% 13%;   --card-amber-fg: 38 75% 65%;
-    --card-blue-bg: 213 42% 13%;   --card-blue-fg: 213 65% 65%;
-    --card-rose-bg: 350 42% 13%;   --card-rose-fg: 350 65% 68%;
-    --card-orange-bg: 25 45% 13%;  --card-orange-fg: 25 75% 65%;
+    --success:          142 69% 58%;
+    --success-soft:     147 41% 11%;
+    --success-foreground: 142 69% 58%;
+    --warning:          43 96% 56%;
+    --warning-soft:     41 68% 10%;
+    --warning-foreground: 43 96% 56%;
+    --danger:           358 100% 74%;
+    --danger-soft:      355 38% 13%;
+    --danger-foreground: 358 100% 74%;
+    --info:             222 100% 75%;
+    --info-soft:        223 52% 17%;
+    --info-foreground:  222 100% 75%;
   }
 }
 
-/* ─── Base styles ────────────────────────────────────────────────────────────*/
 @layer base {
   * { @apply border-border; }
 
   *:focus { outline: none; }
-
+  :focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
-    @apply ring-2 ring-ring ring-offset-1 ring-offset-background;
+    outline: none;
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.2);
   }
 
   html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Plus Jakarta Sans", var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--font-geist), system-ui, -apple-system, sans-serif;
     overscroll-behavior: none;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -108,6 +112,7 @@
 
   .safe-top    { padding-top: env(safe-area-inset-top); }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .tabular     { font-variant-numeric: tabular-nums; }
 }
 
 /* ─── Theme crossfade ────────────────────────────────────────────────────────*/
@@ -118,98 +123,35 @@ html.transitioning *::after {
   transition:
     background-color 300ms ease,
     border-color     300ms ease,
-    color            300ms ease,
-    fill             300ms ease !important;
+    color            150ms ease !important;
 }
 
-/* ─── Keyframes ──────────────────────────────────────────────────────────────*/
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(18px); }
-  65%  { opacity: 1; transform: translateY(-3px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes scale-in {
-  from { opacity: 0; transform: scale(0.82) rotate(-3deg); }
-  70%  { transform: scale(1.06) rotate(1deg); }
-  to   { opacity: 1; transform: scale(1) rotate(0); }
-}
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(22px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes icon-pop {
-  0%   { transform: scale(1)    rotate(0); }
-  30%  { transform: scale(1.18) rotate(-10deg); }
-  65%  { transform: scale(1.05) rotate(4deg); }
-  100% { transform: scale(1)    rotate(0); }
-}
-@keyframes count-in {
-  from { opacity: 0; transform: translateY(10px); filter: blur(6px); }
-  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
-}
-@keyframes pulse-dot {
-  0%, 100% { transform: scale(1);   opacity: 1; }
-  50%       { transform: scale(1.7); opacity: 0.6; }
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-6px); }
-}
-@keyframes shimmer {
-  from { background-position: -200% center; }
-  to   { background-position:  200% center; }
-}
-@keyframes spin-once {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+/* ─── Motion: short and quiet ────────────────────────────────────────────────*/
+@keyframes fade-in   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-up   { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sheet-up  { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.45; }
+  100% { transform: scale(2.4); opacity: 0; }
 }
 
-/* ─── Animation utilities ────────────────────────────────────────────────────*/
 @layer utilities {
-  .animate-fade-up     { animation: fade-up   0.42s cubic-bezier(0.34,1.56,0.64,1) both; }
-  .animate-fade-in     { animation: fade-in   0.28s ease both; }
-  .animate-scale-in    { animation: scale-in  0.38s cubic-bezier(0.34,1.56,0.64,1) both; }
-  .animate-slide-up    { animation: slide-up  0.38s cubic-bezier(0.34,1.56,0.64,1) both; }
-  .animate-icon-pop    { animation: icon-pop  0.52s cubic-bezier(0.34,1.56,0.64,1) both; }
-  .animate-count-in    { animation: count-in  0.46s cubic-bezier(0.34,1.56,0.64,1) both; }
-  .animate-pulse-dot   { animation: pulse-dot 1.6s  ease-in-out infinite; }
-  .animate-float       { animation: float     3.2s  ease-in-out infinite; }
-  .animate-shimmer     { animation: shimmer   2s    linear infinite; }
-  .animate-spin-once   { animation: spin-once 0.5s  ease; }
+  .animate-fade-in   { animation: fade-in 200ms ease both; }
+  .animate-fade-up   { animation: fade-up 240ms ease-out both; }
+  .animate-sheet-up  { animation: sheet-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .animate-pulse-ring { animation: pulse-ring 1.8s ease-out infinite; }
 
-  /* Stagger delays */
-  .delay-0   { animation-delay:   0ms; }
-  .delay-50  { animation-delay:  50ms; }
-  .delay-100 { animation-delay: 100ms; }
-  .delay-150 { animation-delay: 150ms; }
-  .delay-200 { animation-delay: 200ms; }
-  .delay-250 { animation-delay: 250ms; }
-  .delay-300 { animation-delay: 300ms; }
-  .delay-400 { animation-delay: 400ms; }
-  .delay-500 { animation-delay: 500ms; }
+  .press { transition: transform 120ms ease, background-color 150ms ease; }
+  .press:active { transform: scale(0.98); }
 
-  /* Touch interactions */
-  .hover-lift {
-    transition: transform 200ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease;
-  }
-  .hover-lift:hover  { transform: translateY(-3px); box-shadow: 0 8px 24px hsl(262 83% 58% / 0.15); }
-  .hover-lift:active { transform: translateY(0) scale(0.97); }
-
-  .hover-press:active { transform: scale(0.97); transition: transform 100ms ease; }
-
-  /* Coloured card surfaces */
-  .bg-card-violet  { background: hsl(var(--card-violet-bg));  color: hsl(var(--card-violet-fg)); }
-  .bg-card-emerald { background: hsl(var(--card-emerald-bg)); color: hsl(var(--card-emerald-fg)); }
-  .bg-card-amber   { background: hsl(var(--card-amber-bg));   color: hsl(var(--card-amber-fg)); }
-  .bg-card-blue    { background: hsl(var(--card-blue-bg));    color: hsl(var(--card-blue-fg)); }
-  .bg-card-rose    { background: hsl(var(--card-rose-bg));    color: hsl(var(--card-rose-fg)); }
-  .bg-card-orange  { background: hsl(var(--card-orange-bg));  color: hsl(var(--card-orange-fg)); }
-
-  /* Scrollbar */
   .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-none::-webkit-scrollbar { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }

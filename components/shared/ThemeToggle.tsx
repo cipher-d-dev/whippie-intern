@@ -3,36 +3,22 @@
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div className={`h-9 w-9 rounded-full bg-muted/40 animate-pulse ${className}`} />
-    );
-  }
-
-  const isDark = resolvedTheme === "dark" || theme === "dark";
-
+  const isDark = mounted && resolvedTheme === "dark";
   return (
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-background/80 text-foreground shadow-sm backdrop-blur-md transition-all duration-200 hover:bg-muted hover:border-border active:scale-95 ${className}`}
+      className={cn("press inline-flex h-11 w-11 items-center justify-center rounded-full border bg-card text-foreground hover:bg-muted", className)}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {isDark ? (
-        <Sun className="h-4 w-4 text-amber-400 transition-transform duration-200 rotate-0 hover:rotate-45" />
-      ) : (
-        <Moon className="h-4 w-4 text-violet-600 transition-transform duration-200 -rotate-12 hover:rotate-0" />
-      )}
+      {mounted && (isDark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />)}
     </button>
   );
 }
