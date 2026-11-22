@@ -1,168 +1,81 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Send, CheckCircle2, Loader2, Edit2, X } from "lucide-react";
-import { useReport, useUpdateReport, useSubmitReport } from "@/features/reports/reports.hooks";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { useReport } from "@/features/reports/reports.hooks";
+import { ReportEditor } from "@/features/reports/components/ReportEditor";
+import { parseSections } from "@/features/reports/sections";
+import { fmtDate, fmtWhen } from "@/lib/format";
+import { SubHeader } from "@/components/layout/ScreenHeader";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
 export function ReportDetailScreen({ id }: { id: string }) {
-  const router  = useRouter();
   const { data: report, isLoading } = useReport(id);
-  const updateReport  = useUpdateReport(id);
-  const submitReport  = useSubmitReport();
 
-  const [editing,  setEditing]  = useState(false);
-  const [title,    setTitle]    = useState("");
-  const [content,  setContent]  = useState("");
-
-  const startEditing = () => {
-    if (!report) return;
-    setTitle(report.title);
-    setContent(report.content);
-    setEditing(true);
-  };
-
-  const saveEdits = () => {
-    updateReport.mutate(
-      { title: title.trim(), content: content.trim() },
-      { onSuccess: () => setEditing(false) }
+  if (isLoading) {
+    return (
+      <div>
+        <SubHeader title="Report" backHref="/reports" />
+        <div className="space-y-3 px-5 pt-2"><Skeleton className="h-8 w-3/4" /><Skeleton className="h-40 rounded-2xl" /></div>
+      </div>
     );
-  };
+  }
+  if (!report) {
+    return (
+      <div>
+        <SubHeader title="Report" backHref="/reports" />
+        <div className="px-5 py-20 text-center">
+          <p className="font-medium">We couldn&apos;t find that report</p>
+          <Button variant="outline" className="mt-4" asChild><Link href="/reports">Back to reports</Link></Button>
+        </div>
+      </div>
+    );
+  }
 
-  if (isLoading) return <ReportSkeleton onBack={() => router.back()} />;
-  if (!report) return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4">
-      <p className="text-muted-foreground">Report not found.</p>
-      <Button variant="ghost" className="mt-4" onClick={() => router.back()}>Go back</Button>
-    </div>
-  );
+  // Drafts open straight into the editor.
+  if (report.status === "DRAFT") return <ReportEditor key={report.id} report={report} />;
 
-  const isDraft    = report.status === "DRAFT";
-  const isReviewed = report.status === "REVIEWED";
-
-  const statusVariant = report.status === "REVIEWED" ? "success" : report.status === "SUBMITTED" ? "default" : "secondary";
-  const statusLabel   = report.status === "REVIEWED" ? "Reviewed" : report.status === "SUBMITTED" ? "Submitted" : "Draft";
+  const sections = parseSections(report.content);
+  const period = report.periodStart
+    ? report.periodEnd && report.periodEnd.slice(0, 10) !== report.periodStart.slice(0, 10)
+      ? `${fmtDate(report.periodStart)} – ${fmtDate(report.periodEnd)}`
+      : fmtDate(report.periodStart)
+    : null;
 
   return (
-    <div className="flex flex-col pb-8">
-
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 bg-background/80 backdrop-blur-xl border-b border-border/60 px-4 py-3">
-        <button onClick={() => router.back()} className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted hover-press">
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <h1 className="flex-1 truncate text-sm font-semibold text-foreground">Report</h1>
-        <Badge variant={statusVariant}>{statusLabel}</Badge>
-        {isDraft && !editing && (
-          <button onClick={startEditing} className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted hover-press">
-            <Edit2 className="h-4 w-4 text-foreground" />
-          </button>
-        )}
-        {editing && (
-          <button onClick={() => setEditing(false)} className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted hover-press">
-            <X className="h-4 w-4 text-foreground" />
-          </button>
-        )}
-      </div>
-
-      <div className="px-4 pt-5 space-y-4 animate-fade-up">
-
-        {/* Type + period */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant="outline">{report.type === "DAILY" ? "Daily" : "Weekly"}</Badge>
-          {report.periodStart && (
-            <span>
-              {new Date(report.periodStart).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-              {report.periodEnd && ` – ${new Date(report.periodEnd).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
-            </span>
-          )}
-          <span className="ml-auto">
-            Updated {new Date(report.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-          </span>
+    <div className="animate-fade-in">
+      <SubHeader title={report.type === "WEEKLY" ? "Weekly report" : "Daily report"} backHref="/reports" />
+      <div className="flex flex-col gap-3.5 px-5 pb-6 pt-1">
+        <div className="px-1">
+          <StatusBadge status={report.status} />
+          <h2 className="mt-3 text-2xl font-semibold leading-tight tracking-[-0.02em]">{report.title}</h2>
+          <p className="mt-1.5 text-[13px] text-muted-foreground">
+            {period && <span className="font-mono">{period}</span>}
+            {period && " · "}Sent {fmtWhen(report.updatedAt)}
+          </p>
         </div>
 
-        {/* Editing mode */}
-        {editing ? (
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-base font-semibold hover:border-primary/40 transition-colors"
-            />
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={14}
-              className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm resize-none hover:border-primary/40 transition-colors"
-            />
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setEditing(false)}>Cancel</Button>
-              <Button
-                className="flex-1 gap-1.5"
-                onClick={saveEdits}
-                disabled={!title.trim() || !content.trim() || updateReport.isPending}
-              >
-                {updateReport.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Save draft
-              </Button>
-            </div>
+        {report.feedback && (
+          <div className="rounded-2xl border border-success/30 bg-success-soft px-[18px] py-4">
+            <p className="text-sm font-semibold">Supervisor feedback</p>
+            <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed">{report.feedback}</p>
           </div>
-        ) : (
-          <>
-            {/* Read mode */}
-            <h2 className="text-xl font-extrabold tracking-tight text-foreground">{report.title}</h2>
-
-            <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-card">
-              <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{report.content}</p>
-            </div>
-
-            {/* Feedback */}
-            {isReviewed && report.feedback && (
-              <div className="rounded-2xl border border-emerald-200/60 bg-emerald-50 dark:border-emerald-800/30 dark:bg-emerald-900/15 p-4 animate-scale-in">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">Supervisor feedback</p>
-                </div>
-                <p className="text-sm text-emerald-900 dark:text-emerald-200 leading-relaxed">{report.feedback}</p>
-              </div>
-            )}
-
-            {/* Submit CTA */}
-            {isDraft && (
-              <Button
-                className="w-full gap-2"
-                size="lg"
-                onClick={() => submitReport.mutate(id)}
-                disabled={submitReport.isPending}
-              >
-                {submitReport.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Submit report
-              </Button>
-            )}
-          </>
         )}
-      </div>
-    </div>
-  );
-}
 
-function ReportSkeleton({ onBack }: { onBack: () => void }) {
-  return (
-    <div className="flex flex-col">
-      <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3">
-        <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted">
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <Skeleton className="h-4 w-20" />
-      </div>
-      <div className="px-4 pt-5 space-y-4">
-        <Skeleton className="h-7 w-3/4" />
-        <Skeleton className="h-48 w-full" />
+        <Card className="divide-y">
+          {sections.map((s, i) => (
+            <section key={i} className="px-[18px] py-4">
+              {s.heading && <h3 className="text-[13px] font-medium text-muted-foreground">{s.heading}</h3>}
+              <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed">{s.body || "—"}</p>
+            </section>
+          ))}
+        </Card>
+
+        {report.status === "SUBMITTED" && (
+          <p className="px-2 text-center text-[13px] text-muted-foreground">Your supervisor hasn&apos;t reviewed this yet.</p>
+        )}
       </div>
     </div>
   );

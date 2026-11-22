@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { apiCheckIn, apiGetMyAttendance, type CheckInPayload } from "./attendance.api";
+import { apiCheckIn, apiGetMyAttendance, apiGetGeofence, type CheckInPayload } from "./attendance.api";
 import { ApiError } from "@/lib/api/client";
 
 // Shared key — same as dashboard.hooks TODAY_ATTENDANCE_KEY so a check-in
@@ -38,6 +38,16 @@ export function useAttendanceHistory(page = 1) {
   });
 }
 
+/** The office zone. Changes rarely, so it is cached for the session. */
+export function useGeofence() {
+  return useQuery({
+    queryKey: ["attendance", "geofence"],
+    queryFn: apiGetGeofence,
+    staleTime: 60 * 60 * 1000,
+    retry: 1,
+  });
+}
+
 export function useCheckIn() {
   const qc = useQueryClient();
   return useMutation({
@@ -48,25 +58,25 @@ export function useCheckIn() {
 
       if (record.status === "ACCEPTED") {
         toast.success(
-          record.checkType === "CHECK_IN" ? "Checked in!" : "Checked out!"
+          record.checkType === "CHECK_IN" ? "You're checked in" : "You're checked out"
         );
       } else if (record.status === "FLAGGED") {
-        toast.warning("Recorded but flagged — poor GPS accuracy. HR will review.");
+        toast.warning("Recorded, but your GPS signal was weak, so HR will take a look.");
       } else {
-        toast.error("Check-in rejected — you appear to be outside the office.");
+        toast.error("Not accepted: you were outside the office zone. HR can correct it if this is wrong.");
       }
     },
     onError: (err) => {
       if (err instanceof ApiError) {
         if (err.status === 409) {
-          toast.error("Already checked in/out today.");
+          toast.error("You've already done that today.");
         } else if (err.status === 404) {
-          toast.error("Your intern record hasn't been set up yet. Contact HR.");
+          toast.error("HR hasn't finished setting up your record yet.");
         } else {
           toast.error(err.message);
         }
       } else {
-        toast.error("Check-in failed. Please try again.");
+        toast.error("That didn't go through. Check your connection and try again.");
       }
     },
   });

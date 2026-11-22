@@ -1,314 +1,402 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import {
-  MapPin, Loader2, CheckCircle2, XCircle, AlertTriangle,
-  ChevronDown, ChevronUp, Navigation, Info, UserX,
-} from "lucide-react";
-import { useTodayAttendance, useAttendanceHistory, useCheckIn } from "@/features/attendance/attendance.hooks";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Building2, Check, Loader2, LocateFixed, MapPinOff, RefreshCw, TriangleAlert, X } from "lucide-react";
+import { useAttendanceHistory, useCheckIn, useGeofence, useTodayAttendance } from "@/features/attendance/attendance.hooks";
+import type { AttendanceRecord, Geofence } from "@/features/attendance/attendance.api";
+import type { CheckType } from "@/types";
 import { ApiError } from "@/lib/api/client";
-import type { AttendanceRecord } from "@/features/attendance/attendance.api";
-import type { CheckType, AttendanceStatus } from "@/types";
-import { Badge } from "@/components/ui/badge";
+import { distanceMeters, offsetMeters } from "@/lib/geo";
+import { fmtDuration, fmtMeters, fmtTime } from "@/lib/format";
+import { TabHeader } from "@/components/layout/ScreenHeader";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 
-type LocationState = "idle" | "acquiring" | "acquired" | "denied" | "unavailable" | "poor_accuracy" | "submitting";
-interface LocationData { latitude: number; longitude: number; accuracy: number; }
+type Fix = { latitude: number; longitude: number; accuracy: number; at: number };
+type LocState = "idle" | "acquiring" | "ready" | "denied" | "unavailable";
+
+/** inside / weak / outside / unknown: what the server is likely to decide. */
+type Verdict = "inside" | "weak" | "outside" | "unknown";
 
 export function AttendanceScreen() {
   const { data: todayData, isLoading: todayLoading, error: todayError } = useTodayAttendance();
+  const { data: geofence, isError: geofenceError } = useGeofence();
+  const { data: history } = useAttendanceHistory(1);
   const checkIn = useCheckIn();
-  const [locState, setLocState] = useState<LocationState>("idle");
-  const [locData,  setLocData]  = useState<LocationData | null>(null);
-  const [locError, setLocError] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-  const [histPage, setHistPage] = useState(1);
-  const { data: history } = useAttendanceHistory(histPage);
+
+  const [loc, setLoc] = useState<LocState>("idle");
+  const [fix, setFix] = useState<Fix | null>(null);
 
   const noInternRecord = todayError instanceof ApiError && todayError.status === 404;
-  const todayRecords = todayData?.data ?? [];
-  const checkedIn  = todayRecords.find((r) => r.checkType === "CHECK_IN");
-  const checkedOut = todayRecords.find((r) => r.checkType === "CHECK_OUT");
+  const today = todayData?.data ?? [];
+  const checkedIn = today.find((r) => r.checkType === "CHECK_IN") ?? null;
+  const checkedOut = today.find((r) => r.checkType === "CHECK_OUT") ?? null;
   const pendingType: CheckType = checkedIn ? "CHECK_OUT" : "CHECK_IN";
-  const alreadyDone = !!checkedIn && !!checkedOut;
+  const allDone = !!checkedIn && !!checkedOut;
 
-  const acquireLocation = useCallback(() => {
-    if (!navigator.geolocation) { setLocState("unavailable"); setLocError("Geolocation not supported."); return; }
-    setLocState("acquiring"); setLocError(null);
+  const locate = useCallback(() => {
+    if (!("geolocation" in navigator)) {
+      setLoc("unavailable");
+      return;
+    }
+    setLoc("acquiring");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLocData({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy });
-        setLocState(pos.coords.accuracy > 100 ? "poor_accuracy" : "acquired");
+        setFix({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() });
+        setLoc("ready");
       },
-      (err) => {
-        setLocState(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable");
-        setLocError(err.code === err.PERMISSION_DENIED
-          ? "Location permission denied. Enable it in browser settings."
-          : "Could not get your location. Please try again.");
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      (err) => setLoc(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable"),
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
     );
   }, []);
 
-  const handleCheckIn = () => {
-    if (!locData) return;
-    setLocState("submitting");
-    checkIn.mutate(
-      { checkType: pendingType, latitude: locData.latitude, longitude: locData.longitude, locationAccuracy: locData.accuracy },
-      { onSettled: () => setLocState("idle") },
-    );
+  // If location permission was already granted, find the intern straight away.
+  useEffect(() => {
+    if (allDone || noInternRecord || todayLoading) return;
+    let cancelled = false;
+    navigator.permissions
+      ?.query({ name: "geolocation" as PermissionName })
+      .then((p) => { if (!cancelled && p.state === "granted") locate(); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [allDone, noInternRecord, todayLoading, locate]);
+
+  const distance = fix && geofence ? distanceMeters(geofence, fix) : null;
+  const verdict: Verdict =
+    !fix || !geofence || distance === null
+      ? "unknown"
+      : distance > geofence.radiusMeters
+        ? "outside"
+        : fix.accuracy > geofence.poorAccuracyThresholdMeters
+          ? "weak"
+          : "inside";
+
+  const submit = () => {
+    if (!fix) return;
+    checkIn.mutate({ checkType: pendingType, latitude: fix.latitude, longitude: fix.longitude, locationAccuracy: fix.accuracy });
   };
+
+  const dateLabel = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
   if (todayLoading) {
     return (
-      <div className="px-4 pt-6 space-y-4">
-        <Skeleton className="h-8 w-32" />
-        <div className="grid grid-cols-2 gap-3"><Skeleton className="h-20" /><Skeleton className="h-20" /></div>
-        <Skeleton className="h-44 w-full" />
+      <div>
+        <TabHeader title="Check in" aside={<span className="font-mono">{dateLabel}</span>} />
+        <div className="space-y-3 px-5">
+          <Skeleton className="h-[380px] rounded-2xl" />
+          <Skeleton className="h-[52px]" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
-      <div className="animate-fade-up">
-        <h1 className="text-[1.6rem] font-black tracking-tight text-foreground">Attendance</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
-        </p>
+    <div className="animate-fade-in">
+      <TabHeader title="Check in" aside={<span className="font-mono">{dateLabel}</span>} />
+
+      <div className="flex flex-col gap-3.5 px-5">
+        {noInternRecord ? (
+          <NotSetUp />
+        ) : allDone ? (
+          <DayComplete checkIn={checkedIn!} checkOut={checkedOut!} />
+        ) : (
+          <>
+            {checkedIn && <OnSite record={checkedIn} />}
+
+            <Card className="p-[18px]">
+              <ZoneMap geofence={geofence} fix={fix} verdict={verdict} loc={loc} />
+
+              <div className="mt-4 flex justify-center">
+                <VerdictChip verdict={verdict} loc={loc} distance={distance} geofence={geofence} fix={fix} geofenceError={geofenceError} />
+              </div>
+
+              <dl className="mt-4 grid grid-cols-2 gap-2.5">
+                <Stat label="Distance" value={distance !== null ? fmtMeters(distance) : "—"} />
+                <Stat label="GPS accuracy" value={fix ? `±${Math.round(fix.accuracy)} m` : "—"} />
+              </dl>
+            </Card>
+
+            <PrimaryAction
+              loc={loc}
+              verdict={verdict}
+              pendingType={pendingType}
+              pending={checkIn.isPending}
+              onLocate={locate}
+              onSubmit={submit}
+            />
+            <Hint loc={loc} verdict={verdict} pendingType={pendingType} hasFix={!!fix} onRefresh={locate} />
+          </>
+        )}
+
+        {!noInternRecord && <ThisWeek records={history?.data ?? []} />}
       </div>
+    </div>
+  );
+}
 
-      {noInternRecord ? (
-        <NoInternRecordCard />
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-3 animate-fade-up delay-50">
-            <TodayPill type="CHECK_IN"  record={checkedIn  ?? null} />
-            <TodayPill type="CHECK_OUT" record={checkedOut ?? null} />
-          </div>
+// ─── Map ──────────────────────────────────────────────────────────────────────
 
-          {alreadyDone ? (
-            <AllDoneCard className="animate-fade-up delay-100" />
-          ) : (
-            <CheckInCard
-              pendingType={pendingType} locState={locState} locData={locData} locError={locError}
-              onAcquire={acquireLocation} onSubmit={handleCheckIn}
-              className="animate-fade-up delay-100"
+const VIEW = 220; // px, square
+const ZONE_PX = 62; // radius of the office zone on screen
+
+function ZoneMap({ geofence, fix, verdict, loc }: { geofence?: Geofence; fix: Fix | null; verdict: Verdict; loc: LocState }) {
+  const dot = useMemo(() => {
+    if (!geofence || !fix) return null;
+    const { x, y } = offsetMeters(geofence, fix);
+    const pxPerMeter = ZONE_PX / geofence.radiusMeters;
+    let dx = x * pxPerMeter;
+    let dy = -y * pxPerMeter;
+    const max = VIEW / 2 - 14;
+    const len = Math.hypot(dx, dy);
+    const clamped = len > max;
+    if (clamped) {
+      dx = (dx / len) * max;
+      dy = (dy / len) * max;
+    }
+    return { dx, dy, clamped, accuracyPx: Math.min(VIEW / 2, fix.accuracy * pxPerMeter) };
+  }, [geofence, fix]);
+
+  const dotColour =
+    verdict === "outside" ? "bg-danger" : verdict === "weak" ? "bg-warning" : "bg-primary";
+
+  return (
+    <div
+      className="relative mx-auto overflow-hidden rounded-full border border-dashed border-primary/30 bg-accent/60"
+      style={{ width: VIEW, height: VIEW }}
+      role="img"
+      aria-label={
+        !fix ? "Office zone. Your location is not known yet."
+        : verdict === "outside" ? "You are outside the office zone."
+        : "You are inside the office zone."
+      }
+    >
+      {/* Office zone */}
+      <span
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 ring-1 ring-primary/25"
+        style={{ width: ZONE_PX * 2, height: ZONE_PX * 2 }}
+      />
+      <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-[60%] flex-col items-center gap-1 text-[11px] font-medium text-accent-foreground">
+        <Building2 className="h-5 w-5" aria-hidden="true" />
+        Office
+      </span>
+
+      {loc === "acquiring" && (
+        <span className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/30 animate-pulse-ring" />
+      )}
+
+      {dot && (
+        <span className="absolute left-1/2 top-1/2" style={{ transform: `translate(${dot.dx}px, ${dot.dy}px)` }}>
+          {!dot.clamped && (
+            <span
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/15"
+              style={{ width: dot.accuracyPx * 2, height: dot.accuracyPx * 2 }}
             />
           )}
-
-          <HistoryAccordion
-            showHistory={showHistory} setShowHistory={setShowHistory}
-            history={history} histPage={histPage} setHistPage={setHistPage}
-          />
-        </>
+          <span className={cn("absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-card shadow", dotColour)} />
+          <span className="absolute left-3 top-1 whitespace-nowrap rounded-md bg-foreground px-1.5 py-0.5 text-[11px] font-semibold text-background">
+            You
+          </span>
+        </span>
       )}
     </div>
   );
 }
 
-function NoInternRecordCard() {
-  return (
-    <div className="rounded-2xl border border-amber-200/60 bg-amber-50 dark:border-amber-800/30 dark:bg-amber-900/15 p-6 text-center animate-fade-up">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-900/40 mx-auto mb-4 animate-float">
-        <UserX className="h-7 w-7 text-amber-600 dark:text-amber-400" />
-      </div>
-      <p className="text-base font-bold text-amber-900 dark:text-amber-200">Account not fully set up</p>
-      <p className="mt-2 text-sm text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
-        HR needs to create your intern record before attendance is available. This usually happens within your first day.
-      </p>
-      <p className="mt-3 text-xs text-amber-600/70 dark:text-amber-500/70">
-        Contact HR at <span className="font-semibold">hr@whippe.dev</span>
-      </p>
-    </div>
-  );
-}
-
-function TodayPill({ type, record }: { type: CheckType; record: AttendanceRecord | null }) {
-  const styleMap: Record<AttendanceStatus, string> = {
-    ACCEPTED:  "border-emerald-200/60 bg-emerald-50 dark:border-emerald-800/30 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400",
-    FLAGGED:   "border-amber-200/60 bg-amber-50 dark:border-amber-800/30 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400",
-    REJECTED:  "border-rose-200/60 bg-rose-50 dark:border-rose-800/30 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400",
-    CORRECTED: "border-blue-200/60 bg-blue-50 dark:border-blue-800/30 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
-  };
-  const style = record ? styleMap[record.status] : "";
-  return (
-    <div className={cn("rounded-2xl border p-4", record ? style : "border-border/60 bg-card")}>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {type === "CHECK_IN" ? "Check in" : "Check out"}
-      </p>
-      {record ? (
-        <>
-          <p className="text-xl font-black mt-1 tabular-nums">
-            {new Date(record.submittedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-          </p>
-          <p className="text-[11px] font-semibold mt-0.5">{record.status}</p>
-        </>
-      ) : (
-        <p className="text-sm font-semibold text-muted-foreground mt-1">—</p>
-      )}
-    </div>
-  );
-}
-
-function AllDoneCard({ className }: { className?: string }) {
-  return (
-    <div className={cn("rounded-2xl border border-emerald-200/60 bg-emerald-50 dark:border-emerald-800/30 dark:bg-emerald-900/15 p-6 text-center", className)}>
-      <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500 animate-scale-in" />
-      <p className="mt-3 text-base font-bold text-emerald-800 dark:text-emerald-200">All done for today</p>
-      <p className="mt-1 text-sm text-emerald-700/70 dark:text-emerald-400/70">Both check-in and check-out recorded.</p>
-    </div>
-  );
-}
-
-function CheckInCard({ pendingType, locState, locData, locError, onAcquire, onSubmit, className }: {
-  pendingType: CheckType; locState: LocationState; locData: LocationData | null;
-  locError: string | null; onAcquire: () => void; onSubmit: () => void; className?: string;
+function VerdictChip({
+  verdict, loc, distance, geofence, fix, geofenceError,
+}: {
+  verdict: Verdict; loc: LocState; distance: number | null; geofence?: Geofence; fix: Fix | null; geofenceError: boolean;
 }) {
-  const isAcquiring = locState === "acquiring";
-  const isAcquired  = locState === "acquired" || locState === "poor_accuracy";
-  const hasError    = locState === "denied" || locState === "unavailable";
+  const base = "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium";
+  if (loc === "acquiring") {
+    return <span className={cn(base, "bg-muted text-muted-foreground")}><Loader2 className="h-4 w-4 animate-spin" /> Finding you…</span>;
+  }
+  if (loc === "denied") {
+    return <span className={cn(base, "bg-danger-soft text-danger-foreground")}><MapPinOff className="h-4 w-4" /> Location is turned off</span>;
+  }
+  if (loc === "unavailable") {
+    return <span className={cn(base, "bg-danger-soft text-danger-foreground")}><MapPinOff className="h-4 w-4" /> Couldn&apos;t get your location</span>;
+  }
+  if (fix && (geofenceError || !geofence)) {
+    return <span className={cn(base, "bg-muted text-secondary-foreground")}><LocateFixed className="h-4 w-4" /> Location found</span>;
+  }
+  if (verdict === "inside") {
+    return <span className={cn(base, "bg-success-soft text-success-foreground")}><Check className="h-4 w-4" /> Inside the office zone</span>;
+  }
+  if (verdict === "weak") {
+    return <span className={cn(base, "bg-warning-soft text-warning-foreground")}><TriangleAlert className="h-4 w-4" /> Inside, but the GPS signal is weak</span>;
+  }
+  if (verdict === "outside" && distance !== null && geofence) {
+    return (
+      <span className={cn(base, "bg-danger-soft text-danger-foreground")}>
+        <X className="h-4 w-4" /> {fmtMeters(distance - geofence.radiusMeters)} outside the zone
+      </span>
+    );
+  }
+  return <span className={cn(base, "bg-muted text-muted-foreground")}><LocateFixed className="h-4 w-4" /> We need your location</span>;
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-muted px-3.5 py-3">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 font-mono text-lg font-medium tabular">{value}</dd>
+    </div>
+  );
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+
+function PrimaryAction({
+  loc, verdict, pendingType, pending, onLocate, onSubmit,
+}: {
+  loc: LocState; verdict: Verdict; pendingType: CheckType; pending: boolean; onLocate: () => void; onSubmit: () => void;
+}) {
+  const word = pendingType === "CHECK_IN" ? "Check in" : "Check out";
+
+  if (loc === "idle" || loc === "denied" || loc === "unavailable") {
+    return (
+      <Button size="lg" className="w-full" onClick={onLocate}>
+        <LocateFixed /> {loc === "idle" ? "Find my location" : "Try again"}
+      </Button>
+    );
+  }
+  if (loc === "acquiring") {
+    return <Button size="lg" className="w-full" disabled><Loader2 className="animate-spin" /> Finding you…</Button>;
+  }
+  if (verdict === "outside") {
+    return (
+      <Button size="lg" variant="outline" className="w-full" onClick={onSubmit} disabled={pending}>
+        {pending && <Loader2 className="animate-spin" />} {word} anyway
+      </Button>
+    );
+  }
+  return (
+    <Button size="lg" className="w-full" onClick={onSubmit} disabled={pending}>
+      {pending ? <Loader2 className="animate-spin" /> : <Check />} {word}
+    </Button>
+  );
+}
+
+function Hint({
+  loc, verdict, pendingType, hasFix, onRefresh,
+}: {
+  loc: LocState; verdict: Verdict; pendingType: CheckType; hasFix: boolean; onRefresh: () => void;
+}) {
+  let text: string;
+  if (loc === "idle") text = "We only read your location when you tap, to check you're at the office.";
+  else if (loc === "denied") text = "Allow location for this site in your browser settings, then try again.";
+  else if (loc === "unavailable") text = "Move closer to a window or turn on Wi-Fi to help your phone find you.";
+  else if (loc === "acquiring") text = "This usually takes a few seconds.";
+  else if (verdict === "outside") text = "It will be recorded as outside the zone. If you are at the office, HR can correct it.";
+  else if (verdict === "weak") text = "Step outside or near a window for a better signal, or go ahead and HR will review it.";
+  else text = pendingType === "CHECK_IN" ? "Your check-in time is recorded when you tap." : "Remember to check out before you leave.";
 
   return (
-    <div className={cn("rounded-2xl border border-border/60 bg-card p-5 shadow-card space-y-4", className)}>
+    <div className="-mt-1 flex items-start justify-center gap-3 px-2 text-center text-[13px] leading-snug text-muted-foreground">
+      <p>{text}</p>
+      {hasFix && loc === "ready" && (
+        <button type="button" onClick={onRefresh} className="inline-flex shrink-0 items-center gap-1 font-medium text-primary hover:underline">
+          <RefreshCw className="h-3.5 w-3.5" /> Refresh
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Day state cards ──────────────────────────────────────────────────────────
+
+function OnSite({ record }: { record: AttendanceRecord }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <Card className="flex items-center justify-between gap-3 px-[18px] py-4">
+      <div>
+        <p className="text-[13px] text-muted-foreground">Checked in</p>
+        <p className="font-mono text-2xl font-medium tabular">{fmtTime(record.submittedAt)}</p>
+        <p className="text-[13px] text-muted-foreground">On site for {fmtDuration(now - new Date(record.submittedAt).getTime())}</p>
+      </div>
+      <StatusBadge status={record.status} />
+    </Card>
+  );
+}
+
+function DayComplete({ checkIn, checkOut }: { checkIn: AttendanceRecord; checkOut: AttendanceRecord }) {
+  const span = new Date(checkOut.submittedAt).getTime() - new Date(checkIn.submittedAt).getTime();
+  return (
+    <Card className="p-[18px]">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 animate-icon-pop">
-          <Navigation className="h-5 w-5 text-primary" />
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-success-soft text-success-foreground">
+          <Check className="h-5 w-5" />
         </span>
         <div>
-          <p className="text-sm font-bold text-foreground">
-            {pendingType === "CHECK_IN" ? "Check in for today" : "Check out for today"}
-          </p>
-          <p className="text-xs text-muted-foreground">Location verification required</p>
+          <p className="text-base font-semibold">You&apos;re done for today</p>
+          <p className="text-[13px] text-muted-foreground">{fmtDuration(span)} on site</p>
         </div>
       </div>
-
-      <div className="flex items-start gap-2 rounded-xl bg-muted/50 px-3 py-2.5">
-        <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-        <p className="text-xs text-muted-foreground leading-snug">
-          Your GPS coordinates are verified against the DAAR Communications geofence.
-        </p>
-      </div>
-
-      {locState === "idle" && (
-        <Button className="w-full gap-2" size="lg" onClick={onAcquire}>
-          <MapPin className="h-4 w-4" /> Get my location
-        </Button>
-      )}
-
-      {isAcquiring && (
-        <div className="flex items-center justify-center gap-2 py-3">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Acquiring GPS signal...</p>
-        </div>
-      )}
-
-      {locState === "poor_accuracy" && locData && (
-        <div className="rounded-xl border border-amber-200/60 bg-amber-50 dark:bg-amber-900/15 px-3 py-2.5">
-          <div className="flex items-center gap-1.5 mb-1">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-              Poor GPS accuracy ({Math.round(locData.accuracy)}m)
-            </p>
+      <dl className="mt-4 grid grid-cols-2 gap-2.5">
+        {[checkIn, checkOut].map((r) => (
+          <div key={r.checkType} className="rounded-xl bg-muted px-3.5 py-3">
+            <dt className="text-xs text-muted-foreground">{r.checkType === "CHECK_IN" ? "In" : "Out"}</dt>
+            <dd className="mt-0.5 flex items-center justify-between gap-2">
+              <span className="font-mono text-lg font-medium tabular">{fmtTime(r.submittedAt)}</span>
+              {r.status !== "ACCEPTED" && <StatusBadge status={r.status} />}
+            </dd>
           </div>
-          <p className="text-xs text-amber-700/80 dark:text-amber-400/80">May be flagged for HR review. You can still proceed.</p>
-        </div>
-      )}
-
-      {isAcquired && locData && (
-        <div className="space-y-3">
-          <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/60 dark:border-emerald-800/30 px-3 py-2.5">
-            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-              Location acquired · ±{Math.round(locData.accuracy)}m accuracy
-            </p>
-          </div>
-          <Button className="w-full gap-2" size="lg" onClick={onSubmit} disabled={locState === ("submitting" as LocationState)}>
-            {locState === ("submitting" as LocationState)
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <CheckCircle2 className="h-4 w-4" />}
-            Confirm {pendingType === "CHECK_IN" ? "check in" : "check out"}
-          </Button>
-          <button onClick={onAcquire} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors">
-            Refresh location
-          </button>
-        </div>
-      )}
-
-      {hasError && (
-        <div className="rounded-xl border border-rose-200/60 bg-rose-50 dark:bg-rose-900/15 px-3 py-2.5 space-y-2">
-          <div className="flex items-center gap-1.5">
-            <XCircle className="h-4 w-4 text-rose-500" />
-            <p className="text-xs font-semibold text-rose-700 dark:text-rose-300">Location error</p>
-          </div>
-          <p className="text-xs text-rose-600/80 dark:text-rose-400/80">{locError}</p>
-          <button onClick={onAcquire} className="text-xs font-semibold text-rose-700 dark:text-rose-300 hover:underline underline-offset-4">Try again</button>
-        </div>
-      )}
-    </div>
+        ))}
+      </dl>
+    </Card>
   );
 }
 
-function HistoryAccordion({ showHistory, setShowHistory, history, histPage, setHistPage }: {
-  showHistory: boolean; setShowHistory: (v: boolean) => void;
-  history: any; histPage: number; setHistPage: (fn: (p: number) => number) => void;
-}) {
+function NotSetUp() {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden animate-fade-up delay-200">
-      <button onClick={() => setShowHistory(!showHistory)} className="flex w-full items-center justify-between px-4 py-4 hover-press">
-        <p className="text-sm font-semibold text-foreground">Attendance history</p>
-        {showHistory ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-      </button>
-      {showHistory && (
-        <div className="border-t border-border/40">
-          {!history ? (
-            <div className="p-4 space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-          ) : history.data.length === 0 ? (
-            <p className="px-4 py-5 text-sm text-muted-foreground text-center">No records yet.</p>
-          ) : (
-            <>
-              <ul className="divide-y divide-border/40">
-                {history.data.map((record: AttendanceRecord, i: number) => <HistoryRow key={record.id || (record as any)._id || `hist-${record.submittedAt}-${i}`} record={record} index={i} />)}
-              </ul>
-              {history.totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-border/40">
-                  <button disabled={histPage <= 1} onClick={() => setHistPage(p => p - 1)} className="text-xs font-semibold text-primary disabled:opacity-40">← Prev</button>
-                  <span className="text-xs text-muted-foreground">{histPage} / {history.totalPages}</span>
-                  <button disabled={histPage >= history.totalPages} onClick={() => setHistPage(p => p + 1)} className="text-xs font-semibold text-primary disabled:opacity-40">Next →</button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-    </div>
+    <Card className="p-6 text-center">
+      <p className="text-base font-semibold">Check-in isn&apos;t ready yet</p>
+      <p className="mx-auto mt-1.5 max-w-[280px] text-sm leading-relaxed text-muted-foreground">
+        HR still needs to finish setting up your internship record. This usually happens on your first day.
+      </p>
+    </Card>
   );
 }
 
-function HistoryRow({ record, index }: { record: AttendanceRecord; index: number }) {
-  const cfg: Record<AttendanceStatus, { icon: React.ElementType; variant: any; label: string }> = {
-    ACCEPTED:  { icon: CheckCircle2,  variant: "success",     label: "Accepted" },
-    FLAGGED:   { icon: AlertTriangle, variant: "warning",     label: "Flagged" },
-    REJECTED:  { icon: XCircle,       variant: "destructive", label: "Rejected" },
-    CORRECTED: { icon: CheckCircle2,  variant: "default",     label: "Corrected" },
-  };
-  const c = cfg[record.status];
-  const Icon = c.icon;
+// ─── This week ────────────────────────────────────────────────────────────────
+
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
+function ThisWeek({ records }: { records: AttendanceRecord[] }) {
+  const days = useMemo(() => {
+    const now = new Date();
+    const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+    const todayKey = now.toISOString().slice(0, 10);
+    return WEEKDAYS.map((label, i) => {
+      const d = new Date(monday);
+      d.setUTCDate(monday.getUTCDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      const rec = records.find((r) => r.checkType === "CHECK_IN" && (r.date ?? r.submittedAt).slice(0, 10) === key);
+      return { label, key, rec, future: key > todayKey, isToday: key === todayKey };
+    });
+  }, [records]);
+
   return (
-    <li className="flex items-center gap-3 px-4 py-3 animate-fade-up" style={{ animationDelay: `${index * 40}ms` }}>
-      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-muted">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground">{record.checkType === "CHECK_IN" ? "Check in" : "Check out"}</p>
-        <p className="text-xs text-muted-foreground">
-          {new Date(record.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-          {" · "}
-          {new Date(record.submittedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-        </p>
-      </div>
-      <Badge variant={c.variant} className="text-[10px] flex-shrink-0">{c.label}</Badge>
-    </li>
+    <Card>
+      <CardHeader className="pb-1"><CardTitle>This week</CardTitle></CardHeader>
+      <ul className="px-[18px] pb-2">
+        {days.map((d) => (
+          <li key={d.key} className="flex items-center justify-between border-t py-3 first:border-t-0 text-sm">
+            <span className={cn("w-12", d.isToday ? "font-semibold" : "text-muted-foreground")}>{d.label}</span>
+            <span className="flex-1 font-mono tabular">{d.rec ? fmtTime(d.rec.submittedAt) : d.future ? "" : "—"}</span>
+            {d.rec ? <StatusBadge status={d.rec.status} /> : !d.future && !d.isToday ? <span className="text-xs text-muted-foreground">No check-in</span> : null}
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }

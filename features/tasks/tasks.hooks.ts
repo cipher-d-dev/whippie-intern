@@ -47,7 +47,7 @@ export function useStartTask() {
     onSuccess: (task) => {
       qc.setQueryData(TASK_KEY(task.id), task);
       qc.invalidateQueries({ queryKey: ["tasks", "list"] });
-      toast.success("Task marked as in progress");
+      toast.success("Started. Good luck!");
     },
     onError: () => toast.error("Could not update task status"),
   });
@@ -62,7 +62,7 @@ export function useSubmitTask() {
       qc.invalidateQueries({ queryKey: TASK_KEY(vars.taskId) });
       qc.invalidateQueries({ queryKey: ["tasks", "list"] });
       qc.invalidateQueries({ queryKey: SUBMISSIONS_KEY(vars.taskId) });
-      toast.success("Work submitted successfully!");
+      toast.success("Sent to your supervisor");
     },
     onError: (err: any) => {
       const msg = err?.body?.message ?? "Submission failed. Try again.";

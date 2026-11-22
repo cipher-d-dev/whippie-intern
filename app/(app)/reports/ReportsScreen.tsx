@@ -1,163 +1,99 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, FileText, ChevronRight, Clock, CheckCircle2, Send } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, FileText, Plus } from "lucide-react";
 import { useMyReports } from "@/features/reports/reports.hooks";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { Report } from "@/features/reports/reports.api";
-import type { ReportStatus } from "@/types";
-import { cn } from "@/lib/utils";
-
-const FILTERS: { label: string; value: ReportStatus | undefined }[] = [
-  { label: "All",       value: undefined },
-  { label: "Drafts",    value: "DRAFT" },
-  { label: "Submitted", value: "SUBMITTED" },
-  { label: "Reviewed",  value: "REVIEWED" },
-];
-
-const STATUS_CFG: Record<ReportStatus, {
-  label: string;
-  variant: "default" | "secondary" | "warning" | "success";
-  icon: React.ElementType;
-}> = {
-  DRAFT:     { label: "Draft",     variant: "secondary", icon: FileText },
-  SUBMITTED: { label: "Submitted", variant: "default",   icon: Send },
-  REVIEWED:  { label: "Reviewed",  variant: "success",   icon: CheckCircle2 },
-};
+import { parseSections, workWeek } from "@/features/reports/sections";
+import { fmtDate, fmtWhen } from "@/lib/format";
+import { TabHeader } from "@/components/layout/ScreenHeader";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
 export function ReportsScreen() {
-  const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<ReportStatus | undefined>(undefined);
-  const { data, isLoading } = useMyReports(activeFilter);
-  const reports = data?.data ?? [];
+  const { data, isLoading, isError, refetch } = useMyReports();
+  const reports = [...(data?.data ?? [])].sort(
+    (a, b) => +new Date(b.periodStart ?? b.createdAt) - +new Date(a.periodStart ?? a.createdAt),
+  );
+
+  const { start, end } = workWeek();
+  const thisWeek = reports.find((r) => r.type === "WEEKLY" && r.periodStart && r.periodStart.slice(0, 10) >= start && r.periodStart.slice(0, 10) <= end);
 
   return (
-    <div className="flex flex-col pb-4">
-
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/60 px-4 pt-5 pb-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-extrabold tracking-tight text-foreground animate-fade-up">
-            Reports
-          </h1>
-          <Button
-            size="sm"
-            className="gap-1.5 animate-scale-in"
-            onClick={() => router.push("/reports/new")}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New
+    <div className="animate-fade-in">
+      <TabHeader
+        title="Reports"
+        aside={
+          <Button size="sm" variant="outline" className="h-10 rounded-full" asChild>
+            <Link href="/reports/new?type=DAILY"><Plus /> Daily</Link>
           </Button>
-        </div>
+        }
+      />
 
-        {/* Filter pills */}
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {FILTERS.map((f) => (
-            <button
-              key={f.label}
-              onClick={() => setActiveFilter(f.value)}
-              className={cn(
-                "flex-shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200",
-                activeFilter === f.value
-                  ? "bg-primary text-primary-foreground shadow-violet-sm"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80",
-              )}
+      <div className="flex flex-col gap-3.5 px-5">
+        {!isLoading && !thisWeek && (
+          <div className="rounded-2xl bg-primary p-[18px] text-primary-foreground">
+            <p className="text-[13px] opacity-90">Due Friday</p>
+            <p className="mt-1 text-lg font-semibold">This week&apos;s report</p>
+            <p className="mt-1 text-sm opacity-90">Three short questions: what you worked on, what got in the way, and what&apos;s next.</p>
+            <Link
+              href="/reports/new?type=WEEKLY"
+              className="press mt-4 inline-flex h-11 items-center rounded-xl bg-card px-4 text-[15px] font-medium text-primary hover:bg-card/90"
             >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+              Write it now
+            </Link>
+          </div>
+        )}
 
-      {/* List */}
-      <div className="px-4 pt-4 space-y-3">
-        {isLoading
-          ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
-          : reports.length === 0
-          ? <EmptyState />
-          : reports.map((report, i) => (
-              <ReportCard
-                key={report.id}
-                report={report}
-                index={i}
-                onClick={() => router.push(`/reports/${report.id}`)}
-              />
-            ))}
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[76px] rounded-2xl" />)
+        ) : isError ? (
+          <Card className="p-6 text-center">
+            <p className="font-medium">Couldn&apos;t load your reports</p>
+            <button onClick={() => refetch()} className="mt-2 text-sm font-medium text-primary hover:underline">Try again</button>
+          </Card>
+        ) : reports.length === 0 ? (
+          <Card className="px-6 py-10 text-center text-sm text-muted-foreground">
+            Reports you write will show up here, with your supervisor&apos;s feedback.
+          </Card>
+        ) : (
+          <Card>
+            <ul className="divide-y">
+              {reports.map((r) => <ReportRow key={r.id} report={r} />)}
+            </ul>
+          </Card>
+        )}
       </div>
     </div>
   );
 }
 
-function ReportCard({ report, index, onClick }: { report: Report; index: number; onClick: () => void }) {
-  const cfg  = STATUS_CFG[report.status];
-  const Icon = cfg.icon;
-
+function ReportRow({ report }: { report: Report }) {
+  const preview = parseSections(report.content).find((s) => s.body)?.body ?? "";
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left rounded-2xl border border-border/60 bg-card p-4 shadow-card hover-lift hover-press animate-fade-up"
-      style={{ animationDelay: `${index * 60}ms` }}
-    >
-      <div className="flex items-start gap-3">
-        <span className={cn(
-          "mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl",
-          report.status === "DRAFT"     && "bg-muted",
-          report.status === "SUBMITTED" && "bg-primary/10",
-          report.status === "REVIEWED"  && "bg-emerald-50 dark:bg-emerald-900/20",
-        )}>
-          <Icon className={cn(
-            "h-4 w-4",
-            report.status === "DRAFT"     && "text-muted-foreground",
-            report.status === "SUBMITTED" && "text-primary",
-            report.status === "REVIEWED"  && "text-emerald-500",
-          )} />
+    <li>
+      <Link href={`/reports/${report.id}`} className="flex items-center gap-3 px-[18px] py-3.5 hover:bg-muted/50">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+          <FileText className="h-[18px] w-[18px]" />
         </span>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1">{report.title}</p>
-            <ChevronRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-          </div>
-
-          <div className="mt-1.5 flex items-center gap-2">
-            <Badge variant={cfg.variant} className="text-[10px]">
-              {report.type === "DAILY" ? "Daily" : "Weekly"} · {cfg.label}
-            </Badge>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              {new Date(report.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="truncate text-[15px] font-medium">{report.title}</span>
+          </span>
+          <span className="block truncate text-[13px] text-muted-foreground">
+            {report.feedback ? `Feedback: ${report.feedback}` : preview || (report.type === "WEEKLY" ? "Weekly report" : "Daily report")}
+          </span>
+          <span className="mt-1.5 flex items-center gap-2">
+            <StatusBadge status={report.status} />
+            <span className="font-mono text-xs text-muted-foreground">
+              {report.status === "DRAFT" ? `Edited ${fmtWhen(report.updatedAt)}` : fmtDate(report.periodStart ?? report.createdAt)}
             </span>
-          </div>
-
-          {report.feedback && report.status === "REVIEWED" && (
-            <p className="mt-1.5 text-xs text-muted-foreground line-clamp-1 italic">
-              "{report.feedback}"
-            </p>
-          )}
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function EmptyState() {
-  const router = useRouter();
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-up">
-      <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted animate-float">
-        <FileText className="h-7 w-7 text-muted-foreground" />
-      </span>
-      <p className="text-sm font-medium text-foreground">No reports yet</p>
-      <p className="mt-1 text-xs text-muted-foreground mb-4">
-        Write your first daily or weekly report.
-      </p>
-      <Button size="sm" className="gap-1.5" onClick={() => router.push("/reports/new")}>
-        <Plus className="h-3.5 w-3.5" />
-        Write a report
-      </Button>
-    </div>
+          </span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </Link>
+    </li>
   );
 }
