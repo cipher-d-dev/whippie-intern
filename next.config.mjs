@@ -6,6 +6,15 @@ const nextConfig = {
   images: {
     remotePatterns: [],
   },
+  // Face library and models never change for a given version: cache for a year.
+  async headers() {
+    return [
+      {
+        source: "/noprecache/face/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

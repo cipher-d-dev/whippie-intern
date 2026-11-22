@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Bell, CheckCircle2, ClipboardList, FileText, FolderOpen, Loader2, Star, UserCheck } from "lucide-react";
+import { AlertCircle, Bell, CheckCircle2, ClipboardList, FileText, FolderOpen, Loader2, ScanFace, Star, UserCheck } from "lucide-react";
 import { useNotifications, useMarkRead, useMarkAllRead } from "@/features/notifications/notifications.hooks";
 import type { Notification } from "@/features/notifications/notifications.api";
 import type { NotificationType } from "@/types";
@@ -27,6 +27,7 @@ const CONFIG: Partial<Record<NotificationType, Cfg>> = {
   ACCOUNT_REJECTED:             { icon: AlertCircle, tone: "danger" },
   SUPERVISOR_ASSIGNED:          { icon: UserCheck, route: () => "/profile" },
   DOCUMENT_STATUS_CHANGED:      { icon: FolderOpen, route: () => "/timeline" },
+  FACE_PHOTO_REVIEWED:          { icon: ScanFace, route: () => "/face" },
 };
 
 const TONE = {

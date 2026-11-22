@@ -21,6 +21,10 @@ export interface CheckInPayload {
   latitude: number;
   longitude: number;
   locationAccuracy?: number;
+  /** Face check: live selfie, fingerprints and liveness (check-in only, when HR has it on) */
+  face?: { photo: string; descriptors: number[][]; liveness: { blink: boolean; real: number; live: number } };
+  /** Random ID kept on this phone */
+  deviceId?: string;
 }
 
 // ─── API calls ────────────────────────────────────────────────────────────────

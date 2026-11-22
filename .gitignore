@@ -38,3 +38,6 @@ next-env.d.ts
 # OS
 .DS_Store
 Thumbs.db
+
+# Face library + models, copied at build time (scripts/copy-face-assets.mjs)
+/public/noprecache/face/
