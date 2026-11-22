@@ -37,7 +37,7 @@ export function ReportsScreen() {
           <div className="rounded-2xl bg-primary p-[18px] text-primary-foreground">
             <p className="text-[13px] opacity-90">Due Friday</p>
             <p className="mt-1 text-lg font-semibold">This week&apos;s report</p>
-            <p className="mt-1 text-sm opacity-90">Three short questions: what you worked on, what got in the way, and what&apos;s next.</p>
+            <p className="mt-1 text-sm opacity-90">Your logbook for the week: a few lines for each day you worked.</p>
             <Link
               href="/reports/new?type=WEEKLY"
               className="press mt-4 inline-flex h-11 items-center rounded-xl bg-card px-4 text-[15px] font-medium text-primary hover:bg-card/90"

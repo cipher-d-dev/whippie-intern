@@ -76,24 +76,43 @@ export function ProfileScreen() {
     }
   };
 
+  const isCorps = intern?.internshipType === "NYSC_IT";
+  type TextField = { key: Exclude<keyof UpdateProfilePayload, "gender">; label: string; type: string; auto: string };
+  const FIELDS: TextField[] = [
+    { key: "middleName", label: "Middle name", type: "text", auto: "additional-name" },
+    { key: "phone", label: "Phone", type: "tel", auto: "tel" },
+    { key: "address", label: "Address", type: "text", auto: "street-address" },
+    { key: "institution", label: isCorps ? "Institution attended" : "Institution", type: "text", auto: "organization" },
+    { key: "institutionLocation", label: "Institution location", type: "text", auto: "off" },
+    { key: "course", label: "Course of study/discipline", type: "text", auto: "off" },
+    { key: "level", label: "Qualification/level of study", type: "text", auto: "off" },
+    ...(isCorps
+      ? [
+          { key: "stateCode", label: "NYSC state code", type: "text", auto: "off" },
+          { key: "callUpNumber", label: "Call-up number", type: "text", auto: "off" },
+        ] satisfies TextField[]
+      : []),
+  ];
+
   const startEditing = () => {
-    setForm({
-      phone:       intern?.phone       ?? "",
-      address:     intern?.address     ?? "",
-      institution: intern?.institution ?? "",
-      course:      intern?.course      ?? "",
-      level:       intern?.level       ?? "",
-    });
+    const f: UpdateProfilePayload = { gender: intern?.gender };
+    for (const { key } of FIELDS) (f as Record<string, string>)[key] = (intern?.[key] as string | undefined) ?? "";
+    setForm(f);
     setEditing(true);
   };
 
+  // Send only what changed. Blank fields are left out (the API won't store an empty value).
   const handleSave = () => {
     const payload: UpdateProfilePayload = {};
-    if (form.phone       !== undefined) payload.phone       = form.phone;
-    if (form.address     !== undefined) payload.address     = form.address;
-    if (form.institution !== undefined) payload.institution = form.institution;
-    if (form.course      !== undefined) payload.course      = form.course;
-    if (form.level       !== undefined) payload.level       = form.level;
+    for (const { key } of FIELDS) {
+      const v = ((form as Record<string, string | undefined>)[key] ?? "").trim();
+      if (v && v !== ((intern?.[key] as string | undefined) ?? "")) (payload as Record<string, string>)[key] = v;
+    }
+    if (form.gender && form.gender !== intern?.gender) payload.gender = form.gender;
+    if (Object.keys(payload).length === 0) {
+      setEditing(false);
+      return;
+    }
     updateProfile.mutate(payload);
   };
 
@@ -134,7 +153,7 @@ export function ProfileScreen() {
 
       <Card className="divide-y overflow-hidden">
         {[
-          { label: "Timeline & documents", sub: summary ? `${summary.documents.verified} of ${summary.documents.total} documents verified` : "Your milestones and paperwork", href: "/timeline", icon: Milestone },
+          { label: "Timeline", sub: "Everything you've done on the programme", href: "/timeline", icon: Milestone },
           { label: "Evaluations", sub: summary?.evaluations.count ? `${summary.evaluations.count} from your supervisor` : "Feedback from your supervisor", href: "/evaluations", icon: Star },
           { label: "Notes & to-dos", sub: "Private to this phone", href: "/notes", icon: NotebookPen },
         ].map(({ label, sub, href, icon: Icon }) => (
@@ -170,20 +189,32 @@ export function ProfileScreen() {
       >
         {editing ? (
           <div className="space-y-3 py-2">
-            {([
-              ["phone", "Phone", "tel"],
-              ["address", "Address", "text"],
-              ["institution", "Institution", "text"],
-              ["course", "Course", "text"],
-              ["level", "Level", "text"],
-            ] as const).map(([field, label, type]) => (
-              <div key={field}>
-                <label htmlFor={`f-${field}`} className="text-[13px] font-medium">{label}</label>
+            <div>
+              <span id="f-gender-label" className="text-[13px] font-medium">Gender</span>
+              <div role="radiogroup" aria-labelledby="f-gender-label" className="mt-1 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+                {(["FEMALE", "MALE"] as const).map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.gender === g}
+                    onClick={() => setForm((f) => ({ ...f, gender: g }))}
+                    className={cn("h-10 rounded-lg text-sm font-medium", form.gender === g ? "bg-card shadow-sm" : "text-muted-foreground")}
+                  >
+                    {g === "FEMALE" ? "Female" : "Male"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {FIELDS.map(({ key, label, type, auto }) => (
+              <div key={key}>
+                <label htmlFor={`f-${key}`} className="text-[13px] font-medium">{label}</label>
                 <input
-                  id={`f-${field}`}
+                  id={`f-${key}`}
                   type={type}
-                  value={form[field] ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
+                  autoComplete={auto}
+                  value={(form as Record<string, string | undefined>)[key] ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                   className="mt-1 h-11 w-full rounded-xl border border-input bg-card px-3.5 text-[15px]"
                 />
               </div>
@@ -195,11 +226,11 @@ export function ProfileScreen() {
         ) : (
           <>
             <InfoRow label="Email" value={user?.email ?? "—"} />
-            <InfoRow label="Phone" value={intern?.phone || "Not added"} muted={!intern?.phone} />
-            <InfoRow label="Address" value={intern?.address || "Not added"} muted={!intern?.address} />
-            <InfoRow label="Institution" value={intern?.institution || "Not added"} muted={!intern?.institution} />
-            <InfoRow label="Course" value={intern?.course || "Not added"} muted={!intern?.course} />
-            <InfoRow label="Level" value={intern?.level || "Not added"} muted={!intern?.level} />
+            <InfoRow label="Gender" value={intern?.gender ? (intern.gender === "FEMALE" ? "Female" : "Male") : "Not added"} muted={!intern?.gender} />
+            {FIELDS.map(({ key, label }) => {
+              const v = intern?.[key] as string | undefined;
+              return <InfoRow key={key} label={label} value={v || "Not added"} muted={!v} />;
+            })}
           </>
         )}
       </InfoCard>

@@ -58,13 +58,13 @@ export function SignupForm() {
       <div className="grid grid-cols-2 gap-2.5">
         <div className="space-y-1">
           <label htmlFor="firstName" className="block text-[13px] font-medium text-foreground">First name</label>
-          <input id="firstName" type="text" autoComplete="given-name" placeholder="Ada"
+          <input id="firstName" type="text" autoComplete="given-name" placeholder="Tolani"
             {...register("firstName")} className={inputCls(!!errors.firstName)} />
           {errors.firstName && <p className="text-[13px] text-danger-foreground">{errors.firstName.message}</p>}
         </div>
         <div className="space-y-1">
           <label htmlFor="lastName" className="block text-[13px] font-medium text-foreground">Last name</label>
-          <input id="lastName" type="text" autoComplete="family-name" placeholder="Okafor"
+          <input id="lastName" type="text" autoComplete="family-name" placeholder="Abubakar"
             {...register("lastName")} className={inputCls(!!errors.lastName)} />
           {errors.lastName && <p className="text-[13px] text-danger-foreground">{errors.lastName.message}</p>}
         </div>

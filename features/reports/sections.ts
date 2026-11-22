@@ -13,10 +13,14 @@ export interface Prompt {
 }
 
 export const PROMPTS: Record<ReportType, Prompt[]> = {
+  // Weekly report = logbook: one entry per working day, like the SIWES logbook.
+  // Every day is optional (corps members work 4 days a week); fill the days you worked.
   WEEKLY: [
-    { heading: "What I worked on", placeholder: "The main things you did this week, and what came of them." },
-    { heading: "Challenges", placeholder: "Anything that slowed you down or that you need help with.", optional: true },
-    { heading: "Plan for next week", placeholder: "What you'll focus on next." },
+    { heading: "Monday", placeholder: "What you did on Monday.", optional: true },
+    { heading: "Tuesday", placeholder: "What you did on Tuesday.", optional: true },
+    { heading: "Wednesday", placeholder: "What you did on Wednesday.", optional: true },
+    { heading: "Thursday", placeholder: "What you did on Thursday.", optional: true },
+    { heading: "Friday", placeholder: "What you did on Friday.", optional: true },
   ],
   DAILY: [
     { heading: "What I worked on", placeholder: "What you did today." },

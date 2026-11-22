@@ -149,6 +149,10 @@ export function ReportEditor({ report, initialType = "WEEKLY" }: { report?: Repo
           />
         </div>
 
+        {!legacy && type === "WEEKLY" && (
+          <p className="px-1 text-[13px] text-muted-foreground">Write what you did on each day you worked. Leave out days you weren&apos;t in.</p>
+        )}
+
         {legacy ? (
           <PromptCard id="free" label="Report" value={answers.__free ?? ""} placeholder="" onChange={(v) => set("__free", v)} />
         ) : (
@@ -157,7 +161,7 @@ export function ReportEditor({ report, initialType = "WEEKLY" }: { report?: Repo
               key={`${type}-${p.heading}`}
               id={`p${i}`}
               label={p.heading}
-              optional={p.optional}
+              optional={p.optional && type !== "WEEKLY"}
               placeholder={p.placeholder}
               value={answers[p.heading] ?? ""}
               onChange={(v) => set(p.heading, v)}
@@ -175,7 +179,7 @@ export function ReportEditor({ report, initialType = "WEEKLY" }: { report?: Repo
             <Button variant="outline" size="lg" onClick={() => draftMut.mutate()} disabled={busy || !content}>
               {draftMut.isPending && <Loader2 className="animate-spin" />} Save draft
             </Button>
-            <Button size="lg" onClick={() => submitMut.mutate()} disabled={busy || missing.length > 0}>
+            <Button size="lg" onClick={() => submitMut.mutate()} disabled={busy || missing.length > 0 || !content}>
               {submitMut.isPending && <Loader2 className="animate-spin" />} Submit report
             </Button>
           </div>

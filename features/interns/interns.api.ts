@@ -20,12 +20,17 @@ export interface InternRecord {
   id: string;
   user: { id: string; email: string; role: string; status: string };
   firstName: string;
+  middleName?: string;
   lastName: string;
+  gender?: "MALE" | "FEMALE";
   phone?: string;
   address?: string;
   institution?: string;
+  institutionLocation?: string;
   course?: string;
   level?: string;
+  stateCode?: string;
+  callUpNumber?: string;
   internshipType: InternshipType;
   status: InternshipStatus;
   startDate?: string;
