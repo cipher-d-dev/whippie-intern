@@ -15,11 +15,7 @@ export function GoogleAuthButton({ label = "Continue with Google", className }: 
       type="button"
       onClick={() => { window.location.href = `${API_BASE}/api/v1/auth/google`; }}
       className={cn(
-        "flex w-full items-center justify-center gap-3 rounded-2xl",
-        "border border-border/60 bg-card px-4 py-3",
-        "text-[14px] font-semibold text-foreground",
-        "shadow-[0_1px_3px_hsl(262_18%_88%/0.8)] dark:shadow-[0_1px_3px_hsl(262_18%_5%/0.5)]",
-        "transition-all duration-150 hover:bg-muted/60 hover:shadow-none active:scale-[0.98]",
+        "press flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-card px-4 text-[15px] font-medium text-foreground hover:bg-muted",
         className,
       )}
     >

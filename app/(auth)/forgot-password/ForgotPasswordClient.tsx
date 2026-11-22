@@ -9,6 +9,7 @@ import { Mail, ArrowLeft, ArrowRight, Loader2, CheckCircle2 } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { useForgotPassword } from "@/features/auth/auth.hooks";
 import { cn } from "@/lib/utils";
+import { fieldClass } from "@/lib/ui";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -35,11 +36,11 @@ export function ForgotPasswordClient() {
   if (submitted) {
     return (
       <div className="flex flex-col items-center gap-5 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-900/20">
-          <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-success-soft">
+          <CheckCircle2 className="h-8 w-8 text-success-foreground" />
         </div>
         <div className="space-y-1">
-          <p className="text-[17px] font-extrabold tracking-tight text-foreground">Check your inbox</p>
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">Check your inbox</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             If an account exists for{" "}
             <span className="font-semibold text-foreground">{sentTo}</span>,
@@ -75,7 +76,7 @@ export function ForgotPasswordClient() {
   return (
     <div className="space-y-5">
       <div className="space-y-1">
-        <p className="text-[17px] font-extrabold tracking-tight text-foreground">Forgot password?</p>
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">Forgot password?</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Enter your account email. If it exists, we'll send a reset link.
         </p>
@@ -87,28 +88,21 @@ export function ForgotPasswordClient() {
         noValidate
       >
         <div className="space-y-1.5">
-          <label htmlFor="email" className="block text-[13px] font-semibold text-foreground">
+          <label htmlFor="email" className="block text-[13px] font-medium text-foreground">
             Email address
           </label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" aria-hidden />
             <input
               id="email"
               type="email"
               autoComplete="email"
               placeholder="you@example.com"
               {...register("email")}
-              className={cn(
-                "w-full rounded-2xl border bg-muted/40 pl-10 pr-4 py-3 text-sm font-medium outline-none",
-                "placeholder:text-muted-foreground/40 transition-all duration-150",
-                errors.email
-                  ? "border-destructive/50 bg-destructive/5"
-                  : "border-transparent hover:border-border focus:border-primary/60 focus:bg-background focus:ring-2 focus:ring-primary/15",
-              )}
+              className={fieldClass(!!errors.email)}
             />
           </div>
           {errors.email && (
-            <p className="text-[11px] font-medium text-destructive animate-fade-up">
+            <p className="text-[13px] text-danger-foreground animate-fade-up">
               {errors.email.message}
             </p>
           )}
@@ -116,7 +110,7 @@ export function ForgotPasswordClient() {
 
         <Button
           type="submit"
-          className="group w-full h-12 rounded-2xl text-[15px] font-bold shadow-violet-md"
+          size="lg" className="group w-full"
           disabled={busy}
         >
           {busy

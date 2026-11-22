@@ -10,6 +10,7 @@ import { Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { useResetPassword } from "@/features/auth/auth.hooks";
 import { cn } from "@/lib/utils";
+import { fieldClass } from "@/lib/ui";
 
 const schema = z.object({
   password: z
@@ -41,23 +42,17 @@ export function ResetPasswordClient() {
 
   const busy = isSubmitting || resetPassword.isPending;
 
-  const inputCls = (err: boolean) => cn(
-    "w-full rounded-2xl border bg-muted/40 pl-10 pr-11 py-3 text-sm font-medium outline-none",
-    "placeholder:text-muted-foreground/40 transition-all duration-150",
-    err
-      ? "border-destructive/50 bg-destructive/5"
-      : "border-transparent hover:border-border focus:border-primary/60 focus:bg-background focus:ring-2 focus:ring-primary/15",
-  );
+  const inputCls = fieldClass;
 
   // No token in URL
   if (!token) {
     return (
       <div className="flex flex-col items-center gap-5 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-900/20">
-          <AlertCircle className="h-8 w-8 text-rose-500" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-danger-soft">
+          <AlertCircle className="h-8 w-8 text-danger-foreground" />
         </div>
         <div className="space-y-1">
-          <p className="text-[17px] font-extrabold tracking-tight text-foreground">Invalid link</p>
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">Invalid link</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             This password reset link is invalid or has already been used.
           </p>
@@ -79,7 +74,7 @@ export function ResetPasswordClient() {
   return (
     <div className="space-y-5">
       <div className="space-y-1">
-        <p className="text-[17px] font-extrabold tracking-tight text-foreground">New password</p>
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">New password</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Choose something strong — at least 8 characters with a number.
         </p>
@@ -92,11 +87,10 @@ export function ResetPasswordClient() {
       >
         {/* New password */}
         <div className="space-y-1.5">
-          <label htmlFor="password" className="block text-[13px] font-semibold text-foreground">
+          <label htmlFor="password" className="block text-[13px] font-medium text-foreground">
             New password
           </label>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" aria-hidden />
             <input
               id="password"
               type={showPw ? "text" : "password"}
@@ -108,14 +102,14 @@ export function ResetPasswordClient() {
             <button
               type="button"
               onClick={() => setShowPw((v) => !v)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               aria-label={showPw ? "Hide" : "Show"}
             >
               {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           {errors.password && (
-            <p className="text-[11px] font-medium text-destructive animate-fade-up">
+            <p className="text-[13px] text-danger-foreground animate-fade-up">
               {errors.password.message}
             </p>
           )}
@@ -123,11 +117,10 @@ export function ResetPasswordClient() {
 
         {/* Confirm password */}
         <div className="space-y-1.5">
-          <label htmlFor="confirmPassword" className="block text-[13px] font-semibold text-foreground">
+          <label htmlFor="confirmPassword" className="block text-[13px] font-medium text-foreground">
             Confirm password
           </label>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" aria-hidden />
             <input
               id="confirmPassword"
               type={showCf ? "text" : "password"}
@@ -139,14 +132,14 @@ export function ResetPasswordClient() {
             <button
               type="button"
               onClick={() => setShowCf((v) => !v)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               aria-label={showCf ? "Hide" : "Show"}
             >
               {showCf ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           {errors.confirmPassword && (
-            <p className="text-[11px] font-medium text-destructive animate-fade-up">
+            <p className="text-[13px] text-danger-foreground animate-fade-up">
               {errors.confirmPassword.message}
             </p>
           )}
@@ -154,7 +147,7 @@ export function ResetPasswordClient() {
 
         <Button
           type="submit"
-          className="group w-full h-12 rounded-2xl text-[15px] font-bold shadow-violet-md"
+          size="lg" className="group w-full"
           disabled={busy}
         >
           {busy

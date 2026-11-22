@@ -1,33 +1,29 @@
 import type { ReactNode } from "react";
 import { WhippieLogo } from "@/components/shared/WhippieLogo";
 
+/**
+ * Blue brand panel on top, form on a white sheet below (phone).
+ * On wider screens the sheet becomes a centred card.
+ */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-5 py-12">
-
-      {/* Blobs */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-violet-500/18 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-violet-400/12 blur-3xl" />
-        <div className="absolute top-1/2 -left-16 h-48 w-48 -translate-y-1/2 rounded-full bg-violet-300/10 blur-2xl" />
-      </div>
-
-      {/* Logo + wordmark */}
-      <div className="mb-7 flex flex-col items-center gap-3 animate-fade-up">
-        <WhippieLogo size={60} />
-        <div className="text-center">
-          <p className="text-[13px] font-bold text-foreground tracking-tight">Whippie</p>
-          <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Intern Portal</p>
+    <div className="flex min-h-[100dvh] flex-col bg-primary sm:items-center sm:justify-center sm:p-6">
+      <div className="relative overflow-hidden px-6 pb-14 pt-8 text-primary-foreground safe-top sm:w-full sm:max-w-[420px] sm:px-0 sm:pb-8 sm:pt-0">
+        <WhippieLogo tone="white" size={300} className="pointer-events-none absolute -right-20 -top-10 opacity-[0.1] dark:hidden sm:hidden" />
+        <div className="relative flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white">
+            <WhippieLogo size={24} />
+          </span>
+          <span className="text-lg font-semibold tracking-[-0.02em]">Whippie</span>
         </div>
+        <p className="relative mt-16 max-w-[300px] text-[32px] font-semibold leading-[1.05] tracking-[-0.03em] sm:mt-6 sm:text-2xl">
+          Your internship at DAAR, in your pocket.
+        </p>
       </div>
 
-      {/* Form card */}
-      <div className="w-full max-w-[360px] animate-fade-up delay-100">
-        <div className="rounded-[28px] border border-border/40 bg-card p-7 shadow-[0_2px_0px_hsl(262_18%_88%),0_12px_48px_hsl(262_83%_58%/0.08)]
-          dark:shadow-[0_2px_0px_hsl(262_18%_18%),0_12px_48px_hsl(262_83%_65%/0.12)]">
-          {children}
-        </div>
-      </div>
+      <main className="-mt-6 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-8 safe-bottom sm:mt-0 sm:w-full sm:max-w-[420px] sm:flex-none sm:rounded-[28px] sm:p-8">
+        {children}
+      </main>
     </div>
   );
 }

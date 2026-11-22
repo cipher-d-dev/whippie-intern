@@ -23,6 +23,7 @@ import { useLogin } from "@/features/auth/auth.hooks";
 import { GoogleAuthButton } from "@/components/shared/GoogleAuthButton";
 import { api, ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { fieldClass } from "@/lib/ui";
 import type { ApiResponse } from "@/types";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -38,13 +39,7 @@ const passwordSchema = z.object({
 });
 type FormValues = z.infer<typeof passwordSchema>;
 
-const inputCls = (err: boolean) => cn(
-  "w-full rounded-2xl border bg-muted/40 pl-10 pr-4 py-3 text-sm font-medium outline-none",
-  "placeholder:text-muted-foreground/40 transition-all duration-150",
-  err
-    ? "border-destructive/50 bg-destructive/5"
-    : "border-transparent hover:border-border focus:border-primary/60 focus:bg-background focus:ring-2 focus:ring-primary/15",
-);
+const inputCls = fieldClass;
 
 export function LoginForm() {
   const [step,         setStep]         = useState<"email" | "method">("email");
@@ -111,32 +106,35 @@ export function LoginForm() {
   if (step === "email") {
     return (
       <div className="space-y-4">
+        <div className="space-y-1 pb-1">
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em]">Sign in</h1>
+          <p className="text-sm text-muted-foreground">Enter your email and we&apos;ll show you the right way in.</p>
+        </div>
         <div className="space-y-1.5">
-          <label htmlFor="email-step1" className="block text-[13px] font-semibold text-foreground">
+          <label htmlFor="email-step1" className="block text-[13px] font-medium text-foreground">
             Email address
           </label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" aria-hidden />
             <input
               id="email-step1"
               type="email"
               autoComplete="email"
               placeholder="you@example.com"
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); detectMethod((e.target as HTMLInputElement).value); } }}
-              className={cn(inputCls(!!detectError), "pr-4")}
+              className={cn(inputCls(!!detectError))}
             />
           </div>
           {detectError && (
-            <p className="text-[11px] font-medium text-destructive animate-fade-up">{detectError}</p>
+            <p className="text-[13px] text-danger-foreground animate-fade-up">{detectError}</p>
           )}
         </div>
 
         <Button
           type="button"
-          className="group w-full h-12 rounded-2xl text-[15px] font-bold shadow-violet-md"
+          size="lg" className="group w-full"
           disabled={detecting}
-          onClick={(e) => {
-            const input = (e.currentTarget.closest(".space-y-4")?.querySelector("#email-step1") as HTMLInputElement);
+          onClick={() => {
+            const input = document.getElementById("email-step1") as HTMLInputElement | null;
             detectMethod(input?.value ?? "");
           }}
         >
@@ -146,18 +144,19 @@ export function LoginForm() {
           }
         </Button>
 
-        {/* Alternative sign up link */}
-        <div className="pt-2 text-center border-t border-border/40">
-          <p className="text-xs text-muted-foreground">
-            Don&apos;t have an account yet?{" "}
-            <Link
-              href="/signup"
-              className="font-bold text-primary hover:underline underline-offset-4"
-            >
-              Sign up
-            </Link>
-          </p>
+        <div className="flex items-center gap-3" aria-hidden="true">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">or</span>
+          <div className="h-px flex-1 bg-border" />
         </div>
+        <GoogleAuthButton label="Continue with Google" />
+
+        <p className="pt-4 text-center text-sm text-muted-foreground">
+          New intern or corps member?{" "}
+          <Link href="/signup" className="font-medium text-primary hover:underline underline-offset-4">
+            Create an account
+          </Link>
+        </p>
       </div>
     );
   }
@@ -169,11 +168,13 @@ export function LoginForm() {
       <button
         type="button"
         onClick={() => { setStep("email"); setMethod(null); }}
-        className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        className="-ml-1 inline-flex h-10 max-w-full items-center gap-1.5 rounded-full border bg-card pl-2 pr-3.5 text-[13px] font-medium hover:bg-muted"
+        aria-label={`Change email (${detectedEmail})`}
       >
-        <ChevronLeft className="h-3.5 w-3.5" />
-        <span className="truncate max-w-[240px]">{detectedEmail}</span>
+        <ChevronLeft className="h-4 w-4 shrink-0" />
+        <span className="truncate">{detectedEmail}</span>
       </button>
+      {method !== "none" && <h1 className="pt-1 text-[22px] font-semibold tracking-[-0.02em]">Welcome back</h1>}
 
       {/* ── NONE: no account ── */}
       {method === "none" && (
@@ -194,8 +195,8 @@ export function LoginForm() {
       {/* ── GOOGLE only ── */}
       {method === "google" && (
         <div className="space-y-3">
-          <div className="rounded-2xl border border-amber-200/60 bg-amber-50/60 dark:bg-amber-900/10 dark:border-amber-700/30 px-4 py-3">
-            <p className="text-[13px] text-amber-700 dark:text-amber-400 font-medium leading-snug">
+          <div className="rounded-2xl border border-warning/30 bg-warning-soft px-4 py-3">
+            <p className="text-[13px] text-warning-foreground font-medium leading-snug">
               This account uses Google sign-in — no password is set.
             </p>
           </div>
@@ -215,13 +216,12 @@ export function LoginForm() {
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-[13px] font-semibold text-foreground">Password</label>
+              <label htmlFor="password" className="block text-[13px] font-medium text-foreground">Password</label>
               <Link href="/forgot-password" className="text-[11px] font-semibold text-primary hover:underline underline-offset-4">
                 Forgot?
               </Link>
             </div>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" aria-hidden />
               <input
                 id="password"
                 type={showPw ? "text" : "password"}
@@ -239,20 +239,20 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 aria-label={showPw ? "Hide" : "Show"}
               >
                 {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {errors.password && (
-              <p className="text-[11px] font-medium text-destructive animate-fade-up">{errors.password.message}</p>
+              <p className="text-[13px] text-danger-foreground animate-fade-up">{errors.password.message}</p>
             )}
           </div>
 
           <Button
             type="submit"
-            className="group w-full h-12 rounded-2xl text-[15px] font-bold shadow-violet-md"
+            size="lg" className="group w-full"
             disabled={busy}
           >
             {busy
