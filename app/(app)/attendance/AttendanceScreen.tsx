@@ -178,10 +178,14 @@ function ZoneMap({ geofence, fix, verdict, loc }: { geofence?: Geofence; fix: Fi
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 ring-1 ring-primary/25"
         style={{ width: ZONE_PX * 2, height: ZONE_PX * 2 }}
       />
-      <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-[60%] flex-col items-center gap-1 text-[11px] font-medium text-accent-foreground">
-        <Building2 className="h-5 w-5" aria-hidden="true" />
-        Office
+      <span
+        className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1 text-[11px] font-medium text-accent-foreground"
+        style={{ top: VIEW / 2 - ZONE_PX + 10 }}
+      >
+        <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
+        Office zone
       </span>
+      <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-foreground/50" aria-hidden="true" />
 
       {loc === "acquiring" && (
         <span className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/30 animate-pulse-ring" />

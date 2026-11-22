@@ -6,7 +6,7 @@ import { AlertCircle, Bell, CheckCircle2, ClipboardList, FileText, FolderOpen, L
 import { useNotifications, useMarkRead, useMarkAllRead } from "@/features/notifications/notifications.hooks";
 import type { Notification } from "@/features/notifications/notifications.api";
 import type { NotificationType } from "@/types";
-import { fmtWhen } from "@/lib/format";
+import { fmtTime, fmtWhen } from "@/lib/format";
 import { SubHeader } from "@/components/layout/ScreenHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -96,7 +96,7 @@ export function NotificationsScreen() {
               <h2 className="px-1 pb-2 text-[13px] font-medium text-muted-foreground">{g.label}</h2>
               <Card className="overflow-hidden">
                 <ul className="divide-y">
-                  {g.items.map((n, i) => <Row key={n.id || n._id || `${n.createdAt}-${i}`} n={n} onOpen={() => open(n)} />)}
+                  {g.items.map((n, i) => <Row key={n.id || n._id || `${n.createdAt}-${i}`} n={n} today={g.label === "Today"} onOpen={() => open(n)} />)}
                 </ul>
               </Card>
             </section>
@@ -115,7 +115,7 @@ export function NotificationsScreen() {
   );
 }
 
-function Row({ n, onOpen }: { n: Notification; onOpen: () => void }) {
+function Row({ n, today, onOpen }: { n: Notification; today: boolean; onOpen: () => void }) {
   const cfg: Cfg = CONFIG[n.type] ?? { icon: Bell };
   const Icon = cfg.icon;
   return (
@@ -127,7 +127,7 @@ function Row({ n, onOpen }: { n: Notification; onOpen: () => void }) {
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline justify-between gap-2">
             <span className={cn("text-sm", !n.read && "font-semibold")}>{n.title}</span>
-            <span className="shrink-0 font-mono text-xs text-muted-foreground">{fmtWhen(n.createdAt)}</span>
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">{today ? fmtTime(n.createdAt) : fmtWhen(n.createdAt)}</span>
           </span>
           <span className="mt-0.5 line-clamp-2 block text-[13px] leading-snug text-muted-foreground">{n.body}</span>
         </span>

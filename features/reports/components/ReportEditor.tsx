@@ -165,7 +165,7 @@ export function ReportEditor({ report, initialType = "WEEKLY" }: { report?: Repo
           ))
         )}
 
-        <div className="mt-auto pt-2">
+        <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] -mx-5 mt-auto bg-background/95 px-5 pb-3 pt-3 backdrop-blur-md">
           {missing.length > 0 && content && (
             <p className="pb-2 text-center text-[13px] text-muted-foreground">
               Fill in {missing.map((m) => `“${m}”`).join(" and ")} to send it.
