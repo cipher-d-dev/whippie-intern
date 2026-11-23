@@ -46,7 +46,12 @@ export function ProfileScreen() {
       toast.success("Profile updated");
       setEditing(false);
     },
-    onError: () => toast.error("Could not update profile"),
+    // Show the real reason (e.g. which field was refused) instead of a generic message.
+    onError: (err) => {
+      const e = err as { message?: string; errors?: { field: string; message: string }[] };
+      const field = e.errors?.[0];
+      toast.error(field ? `${field.field}: ${field.message}` : e.message || "Couldn't save your details. Try again.");
+    },
   });
 
   const [editing, setEditing] = useState(false);
@@ -73,7 +78,7 @@ export function ProfileScreen() {
       void qc.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
       toast.success('Profile picture updated');
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to upload photo');
+      toast.error(err instanceof Error && err.message ? `Photo not saved: ${err.message}` : "Couldn't save your photo. Try again.");
     } finally {
       setUploadingAvatar(false);
       e.target.value = '';
