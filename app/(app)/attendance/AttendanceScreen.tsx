@@ -171,15 +171,11 @@ export function AttendanceScreen() {
               </Card>
             ) : (
               <>
-                {pendingType === "CHECK_OUT" && checkedIn && Date.now() < new Date(checkedIn.submittedAt).getTime() + MIN_MINUTES_BEFORE_CHECKOUT * 60_000 ? (
-                  <Button size="lg" variant="outline" className="w-full" disabled>
-                    You can check out from {fmtTime(new Date(new Date(checkedIn.submittedAt).getTime() + MIN_MINUTES_BEFORE_CHECKOUT * 60_000))}
-                  </Button>
-                ) : confirmOut && checkedIn ? (
+                {confirmOut && checkedIn ? (
                   <Card className="p-[18px]">
                     <p className="font-semibold">Check out for today?</p>
                     <p className="mt-1 text-[13px] text-muted-foreground">
-                      You checked in at {fmtTime(checkedIn.submittedAt)}. You can&apos;t undo a check-out.
+                      You checked in at {fmtTime(checkedIn.submittedAt)}. Leaving early is fine; you just can&apos;t undo a check-out.
                     </p>
                     <div className="mt-4 grid grid-cols-2 gap-2.5">
                       <Button variant="outline" onClick={() => setConfirmOut(false)} disabled={checkIn.isPending}>Not yet</Button>
@@ -224,9 +220,6 @@ export function AttendanceScreen() {
 }
 
 // ─── Map ──────────────────────────────────────────────────────────────────────
-
-/** Same rule as the API: no check-out within this many minutes of checking in. */
-const MIN_MINUTES_BEFORE_CHECKOUT = 30;
 
 const VIEW = 220; // px, square
 const ZONE_PX = 62; // radius of the office zone on screen
