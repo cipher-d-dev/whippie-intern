@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, X } from "lucide-react";
 import type { Human } from "@vladmandic/human";
 import { loadHuman } from "@/lib/face/human";
@@ -51,6 +52,7 @@ export function FaceCapture({
   const [step, setStep] = useState<Step>("loading");
   const [error, setError] = useState<string>("");
   const [slow, setSlow] = useState(false);
+  const [hint, setHint] = useState<string>("");
   const [attempt, setAttempt] = useState(0);
   // Keep the latest callback without restarting the camera on every parent render.
   const doneRef = useRef(onDone);
@@ -131,6 +133,15 @@ export function FaceCapture({
           if (ok || current !== "position") blinked = true;
         }
 
+        // Say exactly what's wrong while positioning.
+        const why = faces.length === 0 ? "Fit your face inside the circle"
+          : faces.length > 1 ? "Only one person in the picture"
+          : !bigEnough ? "Move a little closer"
+          : !centred ? "Look straight at the camera"
+          : face && face.score < MIN_SCORE ? "Find better light on your face"
+          : "";
+        setHint((h) => (h === why ? h : why));
+
         let next: Step = current;
         if (!ok) next = "position";
         else if (!blinked) next = "blink";
@@ -170,7 +181,9 @@ export function FaceCapture({
     };
   }, [attempt, stopStream]);
 
-  return (
+  // Rendered on <body> so it sits above the tab bar whatever page opens it.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[70] flex flex-col bg-black text-white">
       <div className="flex items-center justify-between px-4 pb-2 pt-4 safe-top">
         <p className="text-base font-semibold">{title}</p>
@@ -205,7 +218,7 @@ export function FaceCapture({
           <>
             <p className="flex items-center justify-center gap-2 text-lg font-semibold">
               {step === "loading" && <Loader2 className="h-5 w-5 animate-spin" />}
-              {PROMPT[step]}
+              {step === "position" && hint ? hint : PROMPT[step]}
             </p>
             <p className="text-[13px] text-white/70">
               {step === "loading"
@@ -215,6 +228,7 @@ export function FaceCapture({
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
