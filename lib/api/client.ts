@@ -39,18 +39,47 @@ export class ApiError extends Error {
 // Track whether a refresh is already in flight to avoid parallel refresh storms
 let _refreshing: Promise<void> | null = null;
 
+export const SERVER_WAKING =
+  "Can't reach Whippie right now. It may be starting up (this can take up to a minute) or your internet may be off. Try again shortly.";
+
 async function request<T>(path: string, options?: RequestInit, _retry = true): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-    // HTTP-only session cookies are managed by Express
-    credentials: "include",
-  });
+  const doFetch = () =>
+    fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+      },
+      // HTTP-only session cookies are managed by Express
+      credentials: "include",
+    });
+
+  // The API host sleeps when idle and takes up to a minute to wake. A failed
+  // connection or a 502/503/504 then means "starting up", not "broken":
+  // reads are retried once after a pause; everything else gets a clear message.
+  const isGet = !options?.method || options.method === "GET";
+  let response: Response;
+  try {
+    response = await doFetch();
+    if (isGet && [502, 503, 504].includes(response.status)) {
+      await new Promise((r) => setTimeout(r, 8000));
+      response = await doFetch();
+    }
+  } catch {
+    if (isGet) {
+      await new Promise((r) => setTimeout(r, 8000));
+      try {
+        response = await doFetch();
+      } catch {
+        throw new ApiError(0, { message: SERVER_WAKING });
+      }
+    } else {
+      throw new ApiError(0, { message: SERVER_WAKING });
+    }
+  }
+  if ([502, 503, 504].includes(response.status)) throw new ApiError(response.status, { message: SERVER_WAKING });
 
   if (!response.ok) {
     // On 401, attempt a silent token refresh once then retry the original request

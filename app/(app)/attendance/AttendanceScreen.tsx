@@ -27,7 +27,7 @@ type LocState = "idle" | "acquiring" | "ready" | "denied" | "unavailable";
 type Verdict = "inside" | "weak" | "outside" | "unknown";
 
 export function AttendanceScreen() {
-  const { data: todayData, isLoading: todayLoading, error: todayError } = useTodayAttendance();
+  const { data: todayData, isLoading: todayLoading, isFetching, error: todayError } = useTodayAttendance();
   const { data: geofence, isError: geofenceError } = useGeofence();
   const { data: history } = useAttendanceHistory(1);
   const checkIn = useCheckIn();
@@ -35,6 +35,7 @@ export function AttendanceScreen() {
   const { data: face } = useMyFace();
   const [camera, setCamera] = useState(false);
   const [cameraSkipped, setCameraSkipped] = useState(false);
+  const [confirmOut, setConfirmOut] = useState(false);
 
   const [loc, setLoc] = useState<LocState>("idle");
   const [fix, setFix] = useState<Fix | null>(null);
@@ -85,6 +86,11 @@ export function AttendanceScreen() {
 
   const submit = () => {
     if (!fix) return;
+    // Check-out always asks first.
+    if (pendingType === "CHECK_OUT" && !confirmOut) {
+      setConfirmOut(true);
+      return;
+    }
     // With face check on, a check-in starts with a live selfie.
     if (pendingType === "CHECK_IN" && face?.required) {
       setCamera(true);
@@ -105,7 +111,12 @@ export function AttendanceScreen() {
         deviceId: deviceId(),
       },
       // 412 = HR asked for a new face photo since this screen loaded.
-      { onError: (err) => { if (err instanceof ApiError && err.status === 412) qc.invalidateQueries({ queryKey: FACE_KEY }); } },
+      {
+        // Forget the location after a check-in/out, so a second tap on the same
+        // spot can't immediately send a check-out (interns reported this).
+        onSuccess: () => { setFix(null); setLoc("idle"); setConfirmOut(false); },
+        onError: (err) => { if (err instanceof ApiError && err.status === 412) qc.invalidateQueries({ queryKey: FACE_KEY }); },
+      },
     );
   };
 
@@ -160,14 +171,33 @@ export function AttendanceScreen() {
               </Card>
             ) : (
               <>
-                <PrimaryAction
-                  loc={loc}
-                  verdict={verdict}
-                  pendingType={pendingType}
-                  pending={checkIn.isPending}
-                  onLocate={locate}
-                  onSubmit={submit}
-                />
+                {pendingType === "CHECK_OUT" && checkedIn && Date.now() < new Date(checkedIn.submittedAt).getTime() + MIN_MINUTES_BEFORE_CHECKOUT * 60_000 ? (
+                  <Button size="lg" variant="outline" className="w-full" disabled>
+                    You can check out from {fmtTime(new Date(new Date(checkedIn.submittedAt).getTime() + MIN_MINUTES_BEFORE_CHECKOUT * 60_000))}
+                  </Button>
+                ) : confirmOut && checkedIn ? (
+                  <Card className="p-[18px]">
+                    <p className="font-semibold">Check out for today?</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                      You checked in at {fmtTime(checkedIn.submittedAt)}. You can&apos;t undo a check-out.
+                    </p>
+                    <div className="mt-4 grid grid-cols-2 gap-2.5">
+                      <Button variant="outline" onClick={() => setConfirmOut(false)} disabled={checkIn.isPending}>Not yet</Button>
+                      <Button onClick={() => send()} disabled={checkIn.isPending}>
+                        {checkIn.isPending && <Loader2 className="animate-spin" />} Yes, check out
+                      </Button>
+                    </div>
+                  </Card>
+                ) : (
+                  <PrimaryAction
+                    loc={loc}
+                    verdict={verdict}
+                    pendingType={pendingType}
+                    pending={checkIn.isPending || isFetching}
+                    onLocate={locate}
+                    onSubmit={submit}
+                  />
+                )}
                 <Hint loc={loc} verdict={verdict} pendingType={pendingType} hasFix={!!fix} onRefresh={locate} />
                 {pendingType === "CHECK_IN" && face?.required && cameraSkipped && fix && (
                   <button type="button" onClick={() => send()} disabled={checkIn.isPending} className="-mt-1 text-center text-[13px] font-medium text-primary hover:underline">
@@ -194,6 +224,9 @@ export function AttendanceScreen() {
 }
 
 // ─── Map ──────────────────────────────────────────────────────────────────────
+
+/** Same rule as the API: no check-out within this many minutes of checking in. */
+const MIN_MINUTES_BEFORE_CHECKOUT = 30;
 
 const VIEW = 220; // px, square
 const ZONE_PX = 62; // radius of the office zone on screen
