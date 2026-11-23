@@ -56,7 +56,8 @@ export type NotificationType =
   | "SUBMISSION_CHANGES_REQUESTED"
   | "EVALUATION_SUBMITTED"
   | "DOCUMENT_STATUS_CHANGED"
-  | "REPORT_REVIEWED";
+  | "REPORT_REVIEWED"
+  | "FACE_PHOTO_REVIEWED";
 
 // ─── Domain objects ───────────────────────────────────────────────────────────
 

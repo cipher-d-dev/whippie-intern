@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Bell, ChevronRight, FileText, MapPin, PenLine } from "lucide-react";
+import { Bell, ChevronRight, FileText, MapPin, PenLine, ScanFace } from "lucide-react";
+import { needsFacePhoto, useMyFace } from "@/features/face/face";
 import { useSession } from "@/features/auth/auth.hooks";
 import {
   useMyInternRecord,
@@ -31,6 +32,7 @@ export function HomeDashboard() {
   const { data: tasks, isLoading: tasksLoading } = useMyTasks();
   const { data: notifications } = useMyNotifications();
   const { data: reports } = useMyReports();
+  const { data: face } = useMyFace();
 
   const records = Array.isArray(today) ? today : [];
   const checkIn = records.find((a) => a.checkType === "CHECK_IN") ?? null;
@@ -65,6 +67,17 @@ export function HomeDashboard() {
           )}
         </Link>
       </header>
+
+      {needsFacePhoto(face) && (
+        <Link href="/face" className="press flex items-center gap-3.5 rounded-2xl border border-warning/40 bg-warning-soft px-[18px] py-4">
+          <ScanFace className="h-6 w-6 shrink-0 text-warning-foreground" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{face?.status === "REJECTED" ? "HR asked for a new face photo" : "Add your face photo"}</span>
+            <span className="block text-[13px] text-muted-foreground">You&apos;ll need it to check in.</span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+      )}
 
       {attLoading ? <Skeleton className="h-[136px] rounded-2xl" /> : <TodayCard checkIn={checkIn} checkOut={checkOut} />}
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Camera, ChevronRight, Chrome, Eye, EyeOff, KeyRound, Loader2, LogOut, Milestone, NotebookPen, Star,
+  Camera, ChevronRight, ScanFace, Chrome, Eye, EyeOff, KeyRound, Loader2, LogOut, Milestone, NotebookPen, Star,
 } from "lucide-react";
 import { useSession, useLogout, useLinkPassword, useUnlinkGoogle, useUnlinkPassword } from "@/features/auth/auth.hooks";
 import { useMyInternRecord } from "@/features/dashboard/dashboard.hooks";
@@ -25,6 +25,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { fmtDate } from "@/lib/format";
 import { useTypeLabel } from "@/features/settings/settings";
+import { useMyFace } from "@/features/face/face";
 import { subscribeToPush, unsubscribeFromPush, getPushPermissionState } from "@/lib/push";
 
 export function ProfileScreen() {
@@ -33,6 +34,9 @@ export function ProfileScreen() {
   const { data: intern, isLoading: internLoading } = useMyInternRecord();
   const { data: summary } = useInternSummary(intern?.id);
   const typeLabel = useTypeLabel();
+  const { data: face } = useMyFace();
+  const faceSub = !face || face.status === "NONE" ? (face?.required ? "Needed before you check in" : "Confirms it's you at check-in")
+    : face.status === "PENDING" ? "Waiting for HR" : face.status === "APPROVED" ? "Approved" : "HR asked for a new photo";
 
   const qc = useQueryClient();
   const updateProfile = useMutation({
@@ -154,6 +158,7 @@ export function ProfileScreen() {
       <Card className="divide-y overflow-hidden">
         {[
           { label: "Timeline", sub: "Everything you've done on the programme", href: "/timeline", icon: Milestone },
+          { label: "Face photo", sub: faceSub, href: "/face", icon: ScanFace },
           { label: "Evaluations", sub: summary?.evaluations.count ? `${summary.evaluations.count} from your supervisor` : "Feedback from your supervisor", href: "/evaluations", icon: Star },
           { label: "Notes & to-dos", sub: "Private to this phone", href: "/notes", icon: NotebookPen },
         ].map(({ label, sub, href, icon: Icon }) => (

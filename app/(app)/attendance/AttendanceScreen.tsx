@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, Check, Loader2, LocateFixed, MapPinOff, RefreshCw, TriangleAlert, X } from "lucide-react";
+import { Building2, Check, Loader2, LocateFixed, MapPinOff, RefreshCw, ScanFace, TriangleAlert, X } from "lucide-react";
 import { useAttendanceHistory, useCheckIn, useGeofence, useTodayAttendance } from "@/features/attendance/attendance.hooks";
 import type { AttendanceRecord, Geofence } from "@/features/attendance/attendance.api";
 import type { CheckType } from "@/types";
@@ -14,6 +14,11 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { FaceCapture, type FaceCaptureResult } from "@/components/face/FaceCapture";
+import { needsFacePhoto, useMyFace, FACE_KEY } from "@/features/face/face";
+import { deviceId } from "@/lib/face/human";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Fix = { latitude: number; longitude: number; accuracy: number; at: number };
 type LocState = "idle" | "acquiring" | "ready" | "denied" | "unavailable";
@@ -26,6 +31,10 @@ export function AttendanceScreen() {
   const { data: geofence, isError: geofenceError } = useGeofence();
   const { data: history } = useAttendanceHistory(1);
   const checkIn = useCheckIn();
+  const qc = useQueryClient();
+  const { data: face } = useMyFace();
+  const [camera, setCamera] = useState(false);
+  const [cameraSkipped, setCameraSkipped] = useState(false);
 
   const [loc, setLoc] = useState<LocState>("idle");
   const [fix, setFix] = useState<Fix | null>(null);
@@ -76,7 +85,28 @@ export function AttendanceScreen() {
 
   const submit = () => {
     if (!fix) return;
-    checkIn.mutate({ checkType: pendingType, latitude: fix.latitude, longitude: fix.longitude, locationAccuracy: fix.accuracy });
+    // With face check on, a check-in starts with a live selfie.
+    if (pendingType === "CHECK_IN" && face?.required) {
+      setCamera(true);
+      return;
+    }
+    send();
+  };
+
+  const send = (selfie?: FaceCaptureResult) => {
+    if (!fix) return;
+    checkIn.mutate(
+      {
+        checkType: pendingType,
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        locationAccuracy: fix.accuracy,
+        face: selfie,
+        deviceId: deviceId(),
+      },
+      // 412 = HR asked for a new face photo since this screen loaded.
+      { onError: (err) => { if (err instanceof ApiError && err.status === 412) qc.invalidateQueries({ queryKey: FACE_KEY }); } },
+    );
   };
 
   const dateLabel = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
@@ -119,20 +149,46 @@ export function AttendanceScreen() {
               </dl>
             </Card>
 
-            <PrimaryAction
-              loc={loc}
-              verdict={verdict}
-              pendingType={pendingType}
-              pending={checkIn.isPending}
-              onLocate={locate}
-              onSubmit={submit}
-            />
-            <Hint loc={loc} verdict={verdict} pendingType={pendingType} hasFix={!!fix} onRefresh={locate} />
+            {pendingType === "CHECK_IN" && needsFacePhoto(face) ? (
+              <Card className="p-[18px] text-center">
+                <ScanFace className="mx-auto h-7 w-7 text-primary" />
+                <p className="mt-2 font-semibold">{face?.status === "REJECTED" ? "HR asked for a new face photo" : "Take your face photo first"}</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  {face?.status === "REJECTED" && face.rejectionReason ? face.rejectionReason : "It takes a few seconds. You can check in straight after."}
+                </p>
+                <Button size="lg" className="mt-4 w-full" asChild><Link href="/face">Take face photo</Link></Button>
+              </Card>
+            ) : (
+              <>
+                <PrimaryAction
+                  loc={loc}
+                  verdict={verdict}
+                  pendingType={pendingType}
+                  pending={checkIn.isPending}
+                  onLocate={locate}
+                  onSubmit={submit}
+                />
+                <Hint loc={loc} verdict={verdict} pendingType={pendingType} hasFix={!!fix} onRefresh={locate} />
+                {pendingType === "CHECK_IN" && face?.required && cameraSkipped && fix && (
+                  <button type="button" onClick={() => send()} disabled={checkIn.isPending} className="-mt-1 text-center text-[13px] font-medium text-primary hover:underline">
+                    Camera not working? Check in without a selfie (HR will review it)
+                  </button>
+                )}
+              </>
+            )}
           </>
         )}
 
         {!noInternRecord && <ThisWeek records={history?.data ?? []} />}
       </div>
+
+      {camera && (
+        <FaceCapture
+          title="Check-in selfie"
+          onCancel={() => { setCamera(false); setCameraSkipped(true); }}
+          onDone={(r) => { setCamera(false); send(r); }}
+        />
+      )}
     </div>
   );
 }
