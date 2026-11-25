@@ -23,7 +23,7 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
   const mustTakePhoto = needsFacePhoto(face);
   const pathname = usePathname();
   const router = useRouter();
-  const fullScreen = pathname === "/chat"; // the chat has its own header and message box
+  const fullScreen = pathname.startsWith("/chat/"); // an open chat has its own header and message box
   useEffect(() => {
     if (mustTakePhoto && pathname !== "/face") router.replace("/face");
   }, [mustTakePhoto, pathname, router]);
