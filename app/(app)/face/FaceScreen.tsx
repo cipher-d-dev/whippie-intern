@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Clock, Loader2, ScanFace, ShieldCheck, X } from "lucide-react";
 import { FaceCapture, type FaceCaptureResult } from "@/components/face/FaceCapture";
-import { useMyFace, useSendFace } from "@/features/face/face";
+import { needsFacePhoto, useMyFace, useSendFace } from "@/features/face/face";
 import { SubHeader } from "@/components/layout/ScreenHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,7 @@ export function FaceScreen() {
   const [shot, setShot] = useState<FaceCaptureResult | null>(null);
   const send = useSendFace(() => {
     setShot(null);
-    router.push("/attendance");
+    router.replace("/home");
   });
 
   if (isLoading || !face) {
@@ -33,11 +33,22 @@ export function FaceScreen() {
   }
 
   const canTake = face.status !== "APPROVED";
+  const required = needsFacePhoto(face);
 
   return (
     <div className="animate-fade-in">
-      <SubHeader title="Face photo" backHref="/profile" />
+      <SubHeader title="Face photo" backHref="/profile" noBack={required} />
       <div className="flex flex-col gap-3.5 px-5 pb-6 pt-1">
+        {required && (
+          <div className="px-1">
+            <h2 className="text-2xl font-semibold tracking-[-0.02em]">
+              {face.status === "REJECTED" ? "Please take a new face photo" : "One more step before you start"}
+            </h2>
+            <p className="mt-1 text-[15px] text-muted-foreground">
+              Every intern needs a face photo for attendance. It takes a few seconds, then you can use the app as usual.
+            </p>
+          </div>
+        )}
         <StatusCard status={face.status} reason={face.rejectionReason} when={face.reviewedAt ?? face.submittedAt} />
 
         {shot ? (
@@ -79,6 +90,7 @@ export function FaceScreen() {
               </span>
               I agree to DAAR Communications using my face photo to confirm my attendance.
             </button>
+            <p className="mt-3 text-xs text-muted-foreground">Camera not working on this phone? Speak to HR; they can help you take it on another phone.</p>
             <Button size="lg" className="mt-4 w-full" disabled={!consent} onClick={() => setCamera(true)}>
               <ScanFace /> {face.status === "NONE" ? "Take my face photo" : "Take a new photo"}
             </Button>

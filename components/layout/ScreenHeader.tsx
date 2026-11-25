@@ -23,18 +23,21 @@ export function SubHeader({
   backHref,
   close,
   action,
+  noBack,
 }: {
   title: string;
   /** Where back goes when there is no history (e.g. opened from a push notification). */
   backHref: string;
   close?: boolean;
   action?: React.ReactNode;
+  /** Hide the back button (e.g. a required step you can't leave). */
+  noBack?: boolean;
 }) {
   const router = useRouter();
   const Icon = close ? X : ChevronLeft;
   return (
     <header className="sticky top-0 z-40 grid grid-cols-[44px_1fr_auto] items-center gap-2 bg-background/95 px-4 py-3 backdrop-blur-md safe-top">
-      <Link
+      {noBack ? <span /> : <Link
         href={backHref}
         aria-label={close ? "Close" : "Back"}
         className={circle}
@@ -46,7 +49,7 @@ export function SubHeader({
         }}
       >
         <Icon className="h-5 w-5" />
-      </Link>
+      </Link>}
       <h1 className="truncate text-center text-base font-semibold">{title}</h1>
       <div className="flex min-w-[44px] justify-end">{action}</div>
     </header>
