@@ -55,7 +55,8 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <img src="/mark.png" alt="Whippie" width={44} height={44} className="animate-pulse" />
+        {/* Same icon as the home-screen icon and splash, so opening the app looks continuous. */}
+        <img src="/icons/icon-192x192.png" alt="Whippie" width={72} height={72} className="animate-pulse rounded-[22%] shadow-sm" />
       </div>
     );
   }
