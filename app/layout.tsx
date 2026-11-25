@@ -17,7 +17,7 @@ export const metadata: Metadata = {
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
     shortcut: "/favicon.png",
-    apple: "/icons/icon-192x192.png",
+    apple: { url: "/icons/apple-touch-icon.png", sizes: "180x180" },
   },
   appleWebApp: {
     capable: true,
@@ -50,9 +50,6 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth" className={`${geist.variable} ${geistMono.variable}`}>
-      <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-      </head>
       <body className="font-sans">
         <Providers>{children}</Providers>
       </body>
