@@ -7,6 +7,7 @@ import type { Report } from "@/features/reports/reports.api";
 import { parseSections, workWeek } from "@/features/reports/sections";
 import { fmtDate, fmtWhen } from "@/lib/format";
 import { TabHeader } from "@/components/layout/ScreenHeader";
+import { WorkSwitch } from "@/components/layout/WorkSwitch";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,13 +25,14 @@ export function ReportsScreen() {
   return (
     <div className="animate-fade-in">
       <TabHeader
-        title="Reports"
+        title="Work"
         aside={
           <Button size="sm" variant="outline" className="h-10 rounded-full" asChild>
             <Link href="/reports/new?type=DAILY"><Plus /> Daily</Link>
           </Button>
         }
       />
+      <WorkSwitch current="reports" />
 
       <div className="flex flex-col gap-3.5 px-5">
         {!isLoading && !thisWeek && (
