@@ -3,6 +3,10 @@ import withPWA from "@ducanh2912/next-pwa";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Shown on the Me screen so we can tell which version a phone is running.
+  env: {
+    NEXT_PUBLIC_BUILD: (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 7) || new Date().toISOString().slice(0, 10),
+  },
   images: {
     remotePatterns: [],
   },

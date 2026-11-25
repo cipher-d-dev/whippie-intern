@@ -69,7 +69,9 @@ export function useCheckIn() {
     onError: (err) => {
       if (err instanceof ApiError) {
         if (err.status === 409) {
-          toast.error("You've already done that today.");
+          // The server says exactly what happened (already checked in today,
+          // double tap within a minute, check-out before check-in).
+          toast.error(err.message || "You've already done that today.");
         } else if (err.status === 404) {
           toast.error("HR hasn't finished setting up your record yet.");
         } else {
