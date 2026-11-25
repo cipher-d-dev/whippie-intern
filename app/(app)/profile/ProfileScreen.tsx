@@ -251,6 +251,10 @@ export function ProfileScreen() {
       <Button variant="outline" size="lg" className="w-full text-danger-foreground hover:bg-danger-soft" onClick={() => logout.mutate()} disabled={logout.isPending}>
         {logout.isPending ? <Loader2 className="animate-spin" /> : <LogOut />} Sign out
       </Button>
+
+      <p className="pt-1 text-center font-mono text-[11px] text-muted-foreground">
+        Version {process.env.NEXT_PUBLIC_BUILD} · Face check {face?.required ? "on" : "off"}
+      </p>
     </div>
   );
 }
