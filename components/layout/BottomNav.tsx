@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MapPin, ListChecks, FileText, MessageCircle, User } from "lucide-react";
+import { Home, MapPin, BriefcaseBusiness, MessageCircle, User } from "lucide-react";
 import { useChatUnread } from "@/features/chat/hooks";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/home",       label: "Home",     icon: Home,       also: ["/notifications"] },
   { href: "/attendance", label: "Check in", icon: MapPin,     also: [] },
-  { href: "/tasks",      label: "Tasks",    icon: ListChecks, also: [] },
-  { href: "/reports",    label: "Reports",  icon: FileText,   also: [] },
+  { href: "/tasks",      label: "Work",     icon: BriefcaseBusiness, also: ["/reports"] },
   { href: "/chat",       label: "Chat",     icon: MessageCircle, also: [] },
   { href: "/profile",    label: "Me",       icon: User,       also: ["/timeline", "/evaluations", "/notes"] },
 ];

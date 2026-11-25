@@ -8,6 +8,7 @@ import type { Task } from "@/features/tasks/tasks.api";
 import type { TaskStatus } from "@/types";
 import { fmtDate } from "@/lib/format";
 import { TabHeader } from "@/components/layout/ScreenHeader";
+import { WorkSwitch } from "@/components/layout/WorkSwitch";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -32,7 +33,8 @@ export function TasksScreen() {
 
   return (
     <div className="animate-fade-in">
-      <TabHeader title="Tasks" aside={supervisor && <span>From {supervisor.firstName} {supervisor.lastName}</span>} />
+      <TabHeader title="Work" aside={supervisor && <span>From {supervisor.firstName} {supervisor.lastName}</span>} />
+      <WorkSwitch current="tasks" />
 
       <div role="tablist" aria-label="Task status" className="scrollbar-none flex gap-2 overflow-x-auto px-5 pb-4">
         {GROUPS.map((g) => {

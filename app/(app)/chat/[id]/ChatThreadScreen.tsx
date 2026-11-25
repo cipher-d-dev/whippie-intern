@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Ban, Flag, Loader2, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useSession } from "@/features/auth/auth.hooks";
 import { useChatModeration, useConversation } from "@/features/chat/hooks";
 import type { ChatMessage, ConversationSummary } from "@/features/chat/api";
 import { ChatThread } from "@/components/chat/ChatThread";
+import { ChatInfo } from "@/components/chat/ChatInfo";
 import { cn } from "@/lib/utils";
 
 /** One chat, full screen like WhatsApp (the tab bar is hidden here). */
@@ -45,6 +46,15 @@ function Thread({ conversation, me, onBack }: { conversation: ConversationSummar
   const privateChat = conversation.kind === "INTERN_DM";
   const mod = useChatModeration(conversation.id);
   const [reporting, setReporting] = useState<{ message?: ChatMessage } | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
+  // The phone's back button closes the info page instead of leaving the chat.
+  useEffect(() => {
+    const onPop = () => setInfoOpen(false);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  const openInfo = () => { history.pushState({ chatInfo: true }, ""); setInfoOpen(true); };
+  const closeInfo = () => { if (history.state?.chatInfo) history.back(); else setInfoOpen(false); };
   const first = conversation.with.name.split(" ")[0];
   const blocked = conversation.blocked;
 
@@ -58,8 +68,14 @@ function Thread({ conversation, me, onBack }: { conversation: ConversationSummar
   ) : undefined;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col safe-bottom">
+    <div className="relative flex min-h-0 flex-1 flex-col safe-bottom">
+      {infoOpen && (
+        <div className="absolute inset-0 z-20 animate-in slide-in-from-right-8 duration-200">
+          <ChatInfo conversationId={conversation.id} onClose={closeInfo} onReport={privateChat ? () => setReporting({}) : undefined} />
+        </div>
+      )}
       <ChatThread
+        onOpenInfo={openInfo}
         conversation={conversation}
         me={me}
         onBack={onBack}
