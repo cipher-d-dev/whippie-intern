@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MapPin, ListChecks, FileText, User } from "lucide-react";
+import { Home, MapPin, ListChecks, FileText, MessageCircle, User } from "lucide-react";
+import { useChatUnread } from "@/features/chat/hooks";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -10,11 +11,13 @@ const navItems = [
   { href: "/attendance", label: "Check in", icon: MapPin,     also: [] },
   { href: "/tasks",      label: "Tasks",    icon: ListChecks, also: [] },
   { href: "/reports",    label: "Reports",  icon: FileText,   also: [] },
+  { href: "/chat",       label: "Chat",     icon: MessageCircle, also: [] },
   { href: "/profile",    label: "Me",       icon: User,       also: ["/timeline", "/evaluations", "/notes"] },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const unread = useChatUnread().data ?? 0;
 
   return (
     <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 backdrop-blur-md safe-bottom">
@@ -31,7 +34,14 @@ export function BottomNav() {
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.2 : 1.8} aria-hidden="true" />
+                <span className="relative">
+                  <Icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.2 : 1.8} aria-hidden="true" />
+                  {href === "/chat" && unread > 0 && (
+                    <span className="absolute -right-2 -top-1.5 min-w-[18px] rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-[18px] text-primary-foreground" aria-label={`${unread} unread`}>
+                      {unread}
+                    </span>
+                  )}
+                </span>
                 {label}
               </Link>
             </li>

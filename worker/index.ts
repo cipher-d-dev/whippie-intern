@@ -56,11 +56,11 @@ self.addEventListener("notificationclick", (event: NotificationClickEvent) => {
     (self.clients as Clients)
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
-        // Focus an existing window if one is already open
+        // Use an open window: focus it and go to the notification's page (e.g. the chat).
         for (const client of clientList) {
           if ("focus" in client) {
-            void (client as WindowClient).focus();
-            return;
+            const w = client as WindowClient;
+            return w.focus().then((c) => (c && "navigate" in c && target ? c.navigate(target).catch(() => c) : c));
           }
         }
         // Otherwise open a new window
