@@ -13,6 +13,12 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
+/** The API needs the sign-in token (it used to be left out, so subscriptions were refused). */
+async function authed(): Promise<Record<string, string>> {
+  const { authHeaders } = await import("@/features/auth/auth.api");
+  return authHeaders();
+}
+
 // ─── urlBase64ToUint8Array ────────────────────────────────────────────────────
 // Converts the URL-safe base64 VAPID public key to a Uint8Array for the browser API.
 
@@ -53,15 +59,16 @@ async function persistSubscription(sub: PushSubscription): Promise<void> {
     return;
   }
 
-  await fetch(`${API_BASE}/api/v1/notifications/subscribe`, {
+  const res = await fetch(`${API_BASE}/api/v1/notifications/subscribe`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authed()) },
     body: JSON.stringify({
       endpoint: json.endpoint,
       keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
     }),
   });
+  if (!res.ok) throw new Error(`Saving the push subscription failed (${res.status})`);
 }
 
 // ─── Remove subscription from API ────────────────────────────────────────────
@@ -70,7 +77,7 @@ async function removeSubscription(endpoint: string): Promise<void> {
   await fetch(`${API_BASE}/api/v1/notifications/subscribe`, {
     method: "DELETE",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authed()) },
     body: JSON.stringify({ endpoint }),
   });
 }
